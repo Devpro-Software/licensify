@@ -1,4 +1,4 @@
-# Licensify: Digital License Signing & Verification 🔐
+# Licensify: Digital License Signatures & Verification 🔐
 
 Licensify is a powerful Go library that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
 
