@@ -1,6 +1,6 @@
 # Licensify: Digital License Signatures & Verification 🔐
 
-Licensify is a powerful Go library (more to come) that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
+Licensify is a powerful Go library that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
 
 Whether you're building a commercial software product or a subscription-based service, Licensify offers an efficient solution for license management.
 
@@ -45,7 +45,7 @@ The typical flow for using Licensify involves three main stages:
 
 Below are the steps to use Licensify to create and verify a digital license.
 
-Generate RSA Keys here: [How to generate public and private keys](https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-public-and-private-keys-%EF%B8%8F)
+You first need to generate RSA Keys. These keys help you sign and verify the license signatures. You can generate them by following the instructions here: [How to generate public and private keys](https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-public-and-private-keys-%EF%B8%8F)
 
 #### 1. Signing a License (Server Side / Backend)
 
