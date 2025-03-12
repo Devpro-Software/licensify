@@ -1,6 +1,6 @@
 # Licensify: Digital License Signatures & Verification 🔐
 
-Licensify is a powerful Go library that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
+Licensify is a powerful Go library (more to come) that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
 
 Whether you're building a commercial software product or a subscription-based service, Licensify offers an efficient solution for license management.
 
@@ -21,7 +21,8 @@ go get github.com/Devpro-Software/licensify
 
 ## Getting Started 🚀
 
-To use Licensify, you'll need to generate a pair of RSA keys: a private key for signing licenses and a public key for verifying them. Here's how to generate these keys using `openssl`.
+To use Licensify, you'll need to generate a pair of RSA keys: a private key for signing licenses and a public key for verifying them. Here's how to generate these: [How to generate public and private keys](
+https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-public-and-private-keys-%EF%B8%8F).
 
 ### Overview of Key Concepts 🔑
 
@@ -44,66 +45,138 @@ The typical flow for using Licensify involves three main stages:
 
 Below are the steps to use Licensify to create and verify a digital license.
 
-Generate RSA Keys here: [How to generate public and private keys](#generating-rsa-public-and-private-keys)
+Generate RSA Keys here: [How to generate public and private keys](https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-public-and-private-keys-%EF%B8%8F)
 
 #### 1. Signing a License (Server Side / Backend)
 
 To start, you'll need to generate a signed license using your private key. The license can then be distributed to your clients.
 
 ```go
-// Load your private key from a PEM file
-priv, err := licensify.LoadPrivateKey("./private.pem")
-if err != nil {
-    log.Fatal("Error loading private key:", err)
+// Example function to sign a license.
+// Generates a signature that can be distributed.
+// Your application can store any meta data, and therefore can implement any feature around this.
+func sign() *licensify.Signature {
+    // load the private key (can be kept in memory as well)
+    priv, err := licensify.LoadPrivateKey("private.pem")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // build a signer with this key
+    signer := licensify.NewSigner(priv)
+
+    // get license id from your backend (or anything you want)
+    licenseID := uuid.New().String()
+
+    // craft a license with your client information
+    license := licensify.NewLicense(map[string]string{
+        "expiry":  time.Now().Add(time.Hour * 24 * 365).String(),
+        "license-id":      licenseID,
+        "product": "Pro Version",
+    })
+
+    // sign the license
+    sig, err := signer.Sign(license)
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println("Sig:", sig.Sig)
+
+    // you can save some server side information to further control the license.
+    // this works great in combination with a server side verification of the license
+    // db.Save(...)
+
+    // optionally save it to a file or continue with your business logic
+    // this file can be sent to your client
+    sig.Save("license.json")
+    return sig
 }
-
-// Create a signer with this private key
-signer := licensify.NewSigner(priv)
-
-// Create a new license with key-value pairs
-license := licensify.NewLicense(map[string]string{
-    "date": "2025-01-01",
-    "product": "Pro Version",
-    "user": "Alice",
-})
-
-// Sign the license with the private key
-sig, err := signer.Sign(license)
-if err != nil {
-    log.Fatal("Error signing the license:", err)
-}
-
-// Save the signed license (signature) to a file
-sig.Save("signed_license.json")
-fmt.Println("License signed and saved successfully!")
 ```
 
-#### 2. Verifying a License (Client Side)
+#### 2. Verifying a License (Client/Server/Anywhere)
 
-On the client side or untrusted infrastructure, you will verify the license signature using the public key.
+On the client side or untrusted infrastructure, you can verify the license signature using the public key.
+This gives the client the ability to make decisions based on the license.
 
 ```go
-// Load the public key to verify the signature
-pk, err := licensify.LoadPublicKey("./public.pem")
-if err != nil {
-    log.Fatal("Error loading public key:", err)
-}
+// Example verify function.
+// Verifies that a distributed signature is valid.
+func verify() {
+    // load public key
+    pub, err := licensify.LoadPublicKey("public.pem")
+    if err != nil {
+        log.Fatal(err)
+    }
 
-// Load the saved signature (signed license)
-sig, err := licensify.LoadSignature("./signed_license.json")
-if err != nil {
-    log.Fatal("Error loading signature:", err)
-}
+    // load signature
+    sig, err := licensify.LoadSignature("license.json")
+    if err != nil {
+        log.Fatal(err)
+    }
 
-// Create a verifier to check the license validity
-verifier := licensify.NewVerifier(pk)
-err = verifier.Verify(sig)
-if err != nil {
-    log.Fatal("License verification failed:", err)
-}
+    // build a verifier
+    verifier := licensify.NewVerifier(pub)
 
-fmt.Println("License is valid!")
+    // verify the signature
+    err = verifier.Verify(sig)
+
+    // licenseID := sig.License.Get("ID")
+
+    if err == nil {
+        fmt.Println("✅ Valid signature")
+    } else {
+        fmt.Println("❌ Invalid signature")
+    }
+}
 ```
+
+Validating a license on the client ensures authenticity but does not provide full control over its usage. Since the license signature is tamper-proof, any expiry details must be determined at the time of signing. To maintain greater control, your application can store licenses and track their status on a server, allowing for actions such as revocation or real-time enforcement of license conditions.
+
+#### Server Side Verification Example
+
+```go
+// Endpoint to validate and check if license has been revoked.
+// A server side check like this one, provides full control over your license.
+func revoke(w http.ResponseWriter, r *http.Request) {
+    // load the signature from the request
+    var sig licensify.Signature
+    if err := json.NewDecoder(r.Body).Decode(&sig); err != nil {
+        http.Error(w, "Invalid request body - expected a signature", http.StatusBadRequest)
+        return
+    }
+    defer r.Body.Close()
+
+    // load public key, or store in memory as you like
+    // can also be fetched from your authority server
+    pub, err := licensify.LoadPublicKey("public.pem")
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    // verify the signature
+    verifier := licensify.NewVerifier(pub)
+    err = verifier.Verify(&sig)
+    if err != nil {
+        http.Error(w, "Invalid signature", http.StatusUnauthorized)
+        return
+    }
+
+    // retrieve client specific information from the signature
+    // this license-id must have been set when the license was created
+    // this works because we know the signature has not been tampered with because it was signed with our private key
+    licenseID := sig.License.Get("license-id")
+    fmt.Println("Recieved valid request from license:", licenseID)
+
+    // db.Find(licenseID) ...
+
+    // you can do what you need for your business logic
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(&sig)
+}
+
+```
+
+See the full list of examples here: [examples](examples)
 
 ## Generating RSA Public and Private Keys 🛠️
 
@@ -149,9 +222,9 @@ Support for encrypted private keys, allowing secure loading with a passphrase.
 
 Adding support for key types like **ECDSA** and **Ed25519** for more flexibility.
 
-### 3. License Expiry and Revocation ⏰
+### 3. Seamless License Expiry and Revocation ⏰
 
-Introducing support for setting expiration dates and revoking licenses, allowing greater control over license validity and management.
+Introducing support for setting expiration dates and revoking licenses, allowing greater control over license validity and management. You can do this manually now by adding your own expiry.
 
 ## License ⚖️
 

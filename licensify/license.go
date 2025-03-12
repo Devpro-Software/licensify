@@ -25,6 +25,11 @@ func (l License) Set(key, val string) {
 	l[key] = val
 }
 
+// Get returns the value for a given key.
+func (l License) Get(key string) string {
+	return l[key]
+}
+
 // hash returns a SHA-256 hash of the License data.
 // orders the keys to ensure a consitent signature.
 func (l License) hash() []byte {
