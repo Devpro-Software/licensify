@@ -57,6 +57,9 @@ if err != nil {
     log.Fatal("Error loading private key:", err)
 }
 
+// Create a signer with this private key
+signer := licensify.NewSigner(priv)
+
 // Create a new license with key-value pairs
 license := licensify.NewLicense(map[string]string{
     "date": "2025-01-01",
@@ -65,7 +68,6 @@ license := licensify.NewLicense(map[string]string{
 })
 
 // Sign the license with the private key
-signer := licensify.NewSigner(priv)
 sig, err := signer.Sign(license)
 if err != nil {
     log.Fatal("Error signing the license:", err)
