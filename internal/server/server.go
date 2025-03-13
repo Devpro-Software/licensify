@@ -186,7 +186,7 @@ func (s *Server) setup() {
 			return
 		}
 
-		licenseID := sig.License.Get("license-id")
+		licenseID := sig.License["license-id"]
 		var license License
 		if err := s.db.First(&license, "id = ?", licenseID).Error; err != nil {
 			http.Error(w, "Internal error", http.StatusInternalServerError)
