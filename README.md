@@ -241,6 +241,7 @@ All endpoints except `/validate` require an `API-KEY` header for authentication.
 - `POST /validate` - Verify a license signature
   - Accepts a signature object
   - Verifies both cryptographic signature and license status
+  - Can be called from client devices or untrusted infrastructure
 
 ---
 

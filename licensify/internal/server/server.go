@@ -194,6 +194,11 @@ func (s *Server) setup() {
 			return
 		}
 
+		if !license.Active {
+			http.Error(w, "License Inactive", http.StatusUnauthorized)
+			return
+		}
+
 		w.WriteHeader(http.StatusOK)
 	})
 }
