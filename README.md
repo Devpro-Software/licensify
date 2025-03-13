@@ -1,6 +1,6 @@
 # Licensify: Digital License Signatures & Verification 🔐
 
-Licensify is a powerful Go library that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
+Licensify is a powerful suite of tools that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
 
 Whether you're building a commercial software product or a subscription-based service, Licensify offers an efficient solution for license management.
 
@@ -9,6 +9,7 @@ Whether you're building a commercial software product or a subscription-based se
 - **Create Licenses** 📝: Generate licenses with customizable key-value data.
 - **Sign Licenses** ✍️: Secure your licenses by signing them with your private key.
 - **Verify Signatures** ✅: Easily verify license authenticity using public keys, ensuring trust even in untrusted environments.
+- **Ready-to-Use Server** 🖥️: Includes a complete license management server with REST API for creating, managing, and validating licenses.
 - **Full Support** 💪: Supports both client-side and server-side flow.
 
 ## Installation 📦
@@ -26,12 +27,12 @@ https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-p
 
 ### Overview of Key Concepts 🔑
 
-Before diving into code, let’s walk through some key concepts that Licensify relies on:
+Before diving into code, let's walk through some key concepts that Licensify relies on:
 
 1. **License**: A license contains arbitrary key-value pairs. You can use it to store any information related to your product, such as user details, expiration dates, and features.
 2. **Private Key**: The private key is used to sign the license, ensuring that only you (the developer) can generate valid licenses.
-3. **Public Key**: The public key is used to verify the authenticity of the signed license. It’s safe to distribute to client devices.
-4. **Signature**: A cryptographic signature is generated from the license and private key. It ensures that the license hasn’t been tampered with.
+3. **Public Key**: The public key is used to verify the authenticity of the signed license. It's safe to distribute to client devices.
+4. **Signature**: A cryptographic signature is generated from the license and private key. It ensures that the license hasn't been tampered with.
 
 ### Flow of License Management 🔄
 
@@ -43,7 +44,7 @@ The typical flow for using Licensify involves three main stages:
 
 ### Example Usage 💡
 
-Below are the steps to use Licensify to create and verify a digital license.
+Below are the steps to use Licensify Go library to create and verify a digital license.
 
 You first need to generate RSA Keys. These keys help you sign and verify the license signatures. You can generate them by following the instructions here: [How to generate public and private keys](https://github.com/Devpro-Software/licensify?tab=readme-ov-file#generating-rsa-public-and-private-keys-%EF%B8%8F)
 
@@ -178,6 +179,71 @@ func revoke(w http.ResponseWriter, r *http.Request) {
 
 See the full list of examples here: [examples](examples)
 
+## License Management Server 🌐
+
+Licensify includes a ready-to-use server implementation for managing licenses. This server provides a complete REST API for creating, managing, and validating licenses.
+
+### Server Setup
+
+The server requires the following environment variables:
+
+```bash
+DATABASE_URL=postgresql://user:pass@localhost:5432/dbname
+PUBLIC_KEY=path/to/public.pem
+PRIVATE_KEY=path/to/private.pem
+API_KEY=your-secure-api-key   # Auto-generated in development mode
+PORT=8080                     # Optional: Defaults to 8080
+PRODUCTION=false               # Optional: Defaults to true development mode
+```
+
+#### Installation
+
+```bash
+# Clone Licensify
+git clone https://github.com/Devpro-Software/licensify && cd licensify
+
+# Build server
+go build -o main ./licensify/internal/server/*
+
+# Run
+./main
+```
+
+### API Endpoints
+
+All endpoints except `/validate` require an `API-KEY` header for authentication.
+
+#### License Management
+
+- `GET /licenses` - List all licenses
+- `POST /licenses` - Create a new license
+
+  ```json
+  {
+    "product": "Pro Version",
+    "data": {
+      "customField": "value"
+    },
+    "active": true
+  }
+  ```
+
+- `GET /licenses/{id}` - Get a specific license
+- `PUT /licenses/{id}?active=true|false` - Update license status
+
+#### License Signing
+
+- `POST /licenses/{id}/sign` - Generate a signed license
+  - Returns a signature object compatible with the Licensify client
+
+#### License Validation
+
+- `POST /validate` - Verify a license signature
+  - Accepts a signature object
+  - Verifies both cryptographic signature and license status
+
+---
+
 ## Generating RSA Public and Private Keys 🛠️
 
 ### 1. Generate a Private Key
@@ -237,5 +303,3 @@ We welcome contributions! If you'd like to contribute to Licensify, feel free to
 ## Contact 📬
 
 For questions or support, please reach out to [gpiccirillo@devprodigital.com].
-
----
