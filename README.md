@@ -280,15 +280,19 @@ This will extract the public key from the private key and save it to `public.pem
 
 ## Roadmap 🗺️
 
-### 1. Encrypted Private Key Support 🔒
+### 1. UI Portal for License Server 🖥️
+
+Adding a Portal, allowing easy management of licenses and signatures.
+
+### 2. Encrypted Private Key Support 🔒
 
 Support for encrypted private keys, allowing secure loading with a passphrase.
 
-### 2. Alternative Key Types 🔄
+### 3. Alternative Key Types 🔄
 
 Adding support for key types like **ECDSA** and **Ed25519** for more flexibility.
 
-### 3. Seamless License Expiry and Revocation ⏰
+### 4. Seamless License Expiry and Revocation ⏰
 
 Introducing support for setting expiration dates and revoking licenses, allowing greater control over license validity and management. You can do this manually now by adding your own expiry.
 
