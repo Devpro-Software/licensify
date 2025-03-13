@@ -19,7 +19,22 @@ func LoadPrivateKey(pemfile string) (*rsa.PrivateKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	block, _ := pem.Decode(keyBytes)
+	return LoadPrivateKeyStr(string(keyBytes))
+}
+
+// LoadPublicKey loads an RSA public key from a PEM file.
+func LoadPublicKey(pemfile string) (*rsa.PublicKey, error) {
+	keyBytes, err := os.ReadFile(pemfile)
+	if err != nil {
+		return nil, err
+	}
+	return LoadPublicKeyStr(string(keyBytes))
+}
+
+// LoadPrivateKey loads an RSA private key from a value string.
+// The key must be of PKCS #8 form.
+func LoadPrivateKeyStr(value string) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode([]byte(value))
 	if block == nil {
 		return nil, fmt.Errorf("failed to decode PEM block containing private key")
 	}
@@ -37,13 +52,9 @@ func LoadPrivateKey(pemfile string) (*rsa.PrivateKey, error) {
 	return pk, nil
 }
 
-// LoadPublicKey loads an RSA public key from a PEM file.
-func LoadPublicKey(pemfile string) (*rsa.PublicKey, error) {
-	keyBytes, err := os.ReadFile(pemfile)
-	if err != nil {
-		return nil, err
-	}
-	block, _ := pem.Decode(keyBytes)
+// LoadPublicKey loads an RSA public key from a value string.
+func LoadPublicKeyStr(value string) (*rsa.PublicKey, error) {
+	block, _ := pem.Decode([]byte(value))
 	if block == nil {
 		return nil, fmt.Errorf("failed to decode PEM block containing public key")
 	}
