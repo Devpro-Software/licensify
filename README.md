@@ -200,10 +200,13 @@ PRODUCTION=false               # Optional: Defaults to true development mode
 
 ```bash
 # Clone Licensify
-git clone https://github.com/Devpro-Software/licensify && cd licensify
+mkdir myserver && cd myserver
+git clone https://github.com/Devpro-Software/licensify tmp
+mv tmp/internal/server/* .
+rm -rf tmp
 
 # Build server
-go build -o main ./licensify/internal/server/*
+go build -o main
 
 # Run
 ./main
