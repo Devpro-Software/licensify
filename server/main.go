@@ -19,13 +19,13 @@ func main() {
 	}
 
 	pub := os.Getenv("PUBLIC_KEY")
-	if dsn == "" {
+	if pub == "" {
 		log.Fatal("Environment variable `PUBLIC_KEY` is missing")
 		return
 	}
 
 	priv := os.Getenv("PRIVATE_KEY")
-	if dsn == "" {
+	if priv == "" {
 		log.Fatal("Environment variable `PRIVATE_KEY` is missing")
 		return
 	}
