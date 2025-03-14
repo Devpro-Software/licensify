@@ -7,6 +7,7 @@ package licensify
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -29,6 +30,26 @@ func LoadPublicKey(pemfile string) (*rsa.PublicKey, error) {
 		return nil, err
 	}
 	return LoadPublicKeyStr(string(keyBytes))
+}
+
+// LoadPrivateKey loads an RSA private key from a base64 encoded value.
+// The key must be of PKCS #8 form.
+func LoadPrivateKeyBase64(value string) (*rsa.PrivateKey, error) {
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadPrivateKeyStr(string(decoded))
+}
+
+// LoadPublicKey loads an RSA public key from a base64 encoded string.
+func LoadPublicKeyBase64(value string) (*rsa.PublicKey, error) {
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return nil, err
+	}
+	return LoadPublicKeyStr(string(decoded))
 }
 
 // LoadPrivateKey loads an RSA private key from a value string.

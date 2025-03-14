@@ -14,6 +14,8 @@ Whether you're building a commercial software product or a subscription-based se
 
 ## Installation 📦
 
+To get started right away with instant server and UI console: [License Management Server](https://github.com/Devpro-Software/licensify#license-management-server-)
+
 To integrate Licensify into your Go project, run the following command:
 
 ```bash
@@ -181,7 +183,7 @@ See the full list of examples here: [examples](examples)
 
 ## License Management Server 🌐
 
-Licensify includes a ready-to-use server implementation for managing licenses. This server provides a complete REST API for creating, managing, and validating licenses.
+Licensify includes a ready-to-use server implementation for managing licenses. This server provides a complete REST API for creating, managing, and validating licenses. (UI Console coming soon)
 
 ### Server Setup
 
@@ -202,7 +204,7 @@ PRODUCTION=false               # Optional: Defaults to true development mode
 # Clone Licensify
 mkdir myserver && cd myserver
 git clone https://github.com/Devpro-Software/licensify tmp
-mv tmp/internal/server/* .
+mv tmp/server/* .
 rm -rf tmp
 
 # Build server
