@@ -1,6 +1,6 @@
-# Licensify: Digital License Signatures & Verification 🔐
+# Licensify: Manage Digital Licenses Securely 🔐
 
-Licensify is a powerful suite of tools that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers to manage licenses, ensuring secure distribution and verification across different platforms.
+Licensify is a powerful, open source license management sever and go library that simplifies the process of creating, signing, and verifying digital licenses. It provides an easy-to-use interface for developers and companies to manage licenses, ensuring secure distribution and verification across different platforms.
 
 Whether you're building a commercial software product or a subscription-based service, Licensify offers an efficient solution for license management.
 
@@ -9,8 +9,9 @@ Whether you're building a commercial software product or a subscription-based se
 - **Create Licenses** 📝: Generate licenses with customizable key-value data.
 - **Sign Licenses** ✍️: Secure your licenses by signing them with your private key.
 - **Verify Signatures** ✅: Easily verify license authenticity using public keys, ensuring trust even in untrusted environments.
-- **Ready-to-Use Server** 🖥️: Includes a complete license management server with REST API for creating, managing, and validating licenses.
+- **License Management Server** 💻: Includes a complete license management server with REST API for creating, managing, and validating licenses.
 - **Full Support** 💪: Supports both client-side and server-side flow.
+- **UI Console** 🖥️: **Coming soon...**
 
 ## Installation 📦
 
@@ -183,6 +184,8 @@ See the full list of examples here: [examples](examples)
 
 ## License Management Server 🌐
 
+> This is a work in progress
+
 Licensify includes a ready-to-use server implementation for managing licenses. This server provides a complete REST API for creating, managing, and validating licenses. (UI Console coming soon)
 
 ### Server Setup
@@ -312,4 +315,4 @@ We welcome contributions! If you'd like to contribute to Licensify, feel free to
 
 ## Contact 📬
 
-For questions or support, please reach out to [gpiccirillo@devprodigital.com].
+For questions or support, please reach out to gpiccirillo\@devprodigital.com.
