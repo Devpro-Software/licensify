@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Devpro-Software/licensify/licensify"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
@@ -68,6 +69,9 @@ func (s *Server) Start() {
 	}
 
 	s.db.AutoMigrate(&License{})
+	s.db.AutoMigrate(&Validation{})
+	s.db.AutoMigrate(&User{})
+	s.db.AutoMigrate(&Session{})
 	g := gin.Default()
 	s.setup(g)
 	g.Run(fmt.Sprintf(":%s", s.port))
@@ -75,6 +79,25 @@ func (s *Server) Start() {
 
 func generateErrorCode() string {
 	return fmt.Sprintf("ERR-%d-%d", time.Now().UnixNano(), rand.Intn(1000))
+}
+
+func (s *Server) saveValidation(c *gin.Context, licenseID string, err error) {
+	v := &Validation{}
+	v.ID = uuid.New().String()
+	if err != nil {
+		v.Error = err.Error()
+		v.Succeeded = false
+	} else {
+		v.Succeeded = true
+	}
+
+	v.UserAgent = c.Request.UserAgent()
+	v.LicenseID = licenseID
+	v.IP = c.ClientIP()
+
+	if err := s.db.Create(v).Error; err != nil {
+		log.Printf("Error creating validation log %s", err.Error())
+	}
 }
 
 func internalError(c *gin.Context, err error) {
@@ -105,97 +128,20 @@ func (s *Server) securityFilter(c *gin.Context) {
 }
 
 func (s *Server) setup(g *gin.Engine) {
+	g.Use(cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization", "API-KEY"},
+	}))
+
 	gr := g.Group("/api")
-	gr.Use(s.securityFilter)
-	gr.GET("/licenses", func(ctx *gin.Context) {
-		var licenses []*License
-		if err := s.db.Find(&licenses).Error; err != nil {
-			internalError(ctx, err)
-			return
-		}
+	gauth := g.Group("/auth")
+	gr.Use(s.authMiddleware)
+	s.setupLicenseEndpoints(gr)
+	s.setupValidationEndpoints(gr)
+	s.setupUserEndpoints(gauth)
 
-		ctx.JSON(http.StatusOK, &licenses)
-	})
-
-	gr.POST("/licenses", func(ctx *gin.Context) {
-		var req struct {
-			Product string         `json:"product"`
-			Data    map[string]any `json:"data"`
-			Active  bool           `json:"active"`
-		}
-
-		if err := json.NewDecoder(ctx.Request.Body).Decode(&req); err != nil {
-			http.Error(ctx.Writer, "Invalid body", http.StatusBadRequest)
-			return
-		}
-		defer ctx.Request.Body.Close()
-
-		license := License{}
-		license.ID = uuid.New().String()
-		license.Active = req.Active
-		license.Product = req.Product
-		license.Data = req.Data
-
-		if err := s.db.Create(&license).Error; err != nil {
-			internalError(ctx, err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, license)
-	})
-
-	gr.GET("/licenses/:id", func(ctx *gin.Context) {
-		licenseID := ctx.Param("id")
-		var license License
-		if s.db.First(&license, "id = ?", licenseID).Error != nil {
-			http.NotFound(ctx.Writer, ctx.Request)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, &license)
-	})
-
-	gr.PUT("/licenses/:id", func(ctx *gin.Context) {
-		licenseID := ctx.Param("id")
-		var license License
-		if s.db.First(&license, "id = ?", licenseID).Error != nil {
-			http.NotFound(ctx.Writer, ctx.Request)
-			return
-		}
-
-		active := ctx.Request.URL.Query().Get("active")
-		switch active {
-		case "true":
-			license.Active = true
-			s.db.Save(&license)
-		case "false":
-			license.Active = false
-			s.db.Save(&license)
-		}
-
-		ctx.JSON(http.StatusOK, &license)
-	})
-
-	gr.POST("/licenses/:id/sign", func(ctx *gin.Context) {
-		licenseID := ctx.Param("id")
-		var license License
-		if s.db.First(&license, "id = ?", licenseID).Error != nil {
-			http.NotFound(ctx.Writer, ctx.Request)
-			return
-		}
-		sig, err := s.signer.Sign(licensify.NewLicense(map[string]string{
-			"license-id": license.ID,
-			"product":    license.Product,
-		}))
-		if err != nil {
-			internalError(ctx, err)
-			return
-		}
-
-		ctx.JSON(http.StatusOK, &sig)
-	})
-
-	gr.POST("/validate", func(ctx *gin.Context) {
+	g.POST("/api/validate", func(ctx *gin.Context) {
 		var sig licensify.Signature
 		if err := json.NewDecoder(ctx.Request.Body).Decode(&sig); err != nil {
 			internalError(ctx, err)
@@ -206,6 +152,7 @@ func (s *Server) setup(g *gin.Engine) {
 		err := s.verifier.Verify(&sig)
 		if err != nil {
 			http.Error(ctx.Writer, "Invalid signature", http.StatusUnauthorized)
+			s.saveValidation(ctx, "", err)
 			return
 		}
 
@@ -213,14 +160,18 @@ func (s *Server) setup(g *gin.Engine) {
 		var license License
 		if err := s.db.First(&license, "id = ?", licenseID).Error; err != nil {
 			internalError(ctx, err)
+			s.saveValidation(ctx, "", err)
 			return
 		}
 
 		if !license.Active {
-			http.Error(ctx.Writer, "License Inactive", http.StatusUnauthorized)
+			err := fmt.Errorf("License Inactive")
+			http.Error(ctx.Writer, err.Error(), http.StatusUnauthorized)
+			s.saveValidation(ctx, licenseID, err)
 			return
 		}
 
+		s.saveValidation(ctx, licenseID, nil)
 		ctx.Status(http.StatusOK)
 	})
 
