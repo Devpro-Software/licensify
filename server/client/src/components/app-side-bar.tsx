@@ -1,4 +1,4 @@
-import { Activity, Book, CircleGauge, Settings } from "lucide-react"
+import { Activity, Book, Settings } from "lucide-react"
 
 import {
     Sidebar,
@@ -25,7 +25,7 @@ const items = [
     },
     {
         title: "Settings",
-        url: "#",
+        url: "/dashboard/settings",
         icon: Settings,
     },
 ]

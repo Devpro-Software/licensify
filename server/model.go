@@ -19,25 +19,37 @@ type License struct {
 
 type Validation struct {
 	Model
-	Succeeded bool     `json:"succeeded"`
-	Error     string   `json:"error,omitempty" gorm:"default:null"`
-	UserAgent string   `json:"userAgent" gorm:"default:null"`
-	IP        string   `json:"ip" gorm:"default:null"`
-	LicenseID string   `json:"-" gorm:"default:null"`
-	License   *License `json:"license"`
+	Error     string           `json:"error,omitempty" gorm:"default:null"`
+	UserAgent string           `json:"userAgent" gorm:"default:null"`
+	IP        string           `json:"ip" gorm:"default:null"`
+	LicenseID string           `json:"-" gorm:"default:null"`
+	License   *License         `json:"license"`
+	Status    ValidationStatus `json:"status"`
 }
 
 type User struct {
 	Model
-	Username string `json:"username" gorm:"unique"`
-	Password string `json:"-"`
-	Role     string `json:"role"`
+	Username  string `json:"username" gorm:"unique"`
+	Password  string `json:"-"`
+	Role      string `json:"role"`
+	FirstName string `json:"firstName"`
+	LastName  string `json:"lastName"`
 }
 
 type Session struct {
 	Model
-	UserID  string    `json:"userId"`
+	UserID  string    `json:"-"`
 	User    *User     `json:"user"`
 	Token   string    `json:"-" gorm:"unique"`
 	Expires time.Time `json:"expires"`
 }
+
+type ValidationStatus string
+
+const (
+	StatusAccepted           ValidationStatus = "Accepted"
+	StatusInvalidSignature   ValidationStatus = "InvalidSignature"
+	StatusLicenseInactive    ValidationStatus = "LicenseInactive"
+	StatusLicenseUnavailable ValidationStatus = "LicenseUnavailable"
+	StatusInternalError      ValidationStatus = "InternalError"
+)

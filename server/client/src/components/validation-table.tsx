@@ -10,65 +10,23 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
-import useSWR from "swr"
-import { useState } from "react"
 import useRecentValidations from "@/hooks/use-recent-validations"
-import { Button } from "./ui/button"
-import { toast } from "sonner"
 import { timeAgo } from "@/services/time"
+import { toast } from "sonner"
+import { Button } from "./ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
-const invoices = [
-    {
-        invoice: "INV001",
-        paymentStatus: "Paid",
-        totalAmount: "$250.00",
-        paymentMethod: "Credit Card",
-    },
-    {
-        invoice: "INV002",
-        paymentStatus: "Pending",
-        totalAmount: "$150.00",
-        paymentMethod: "PayPal",
-    },
-    {
-        invoice: "INV003",
-        paymentStatus: "Unpaid",
-        totalAmount: "$350.00",
-        paymentMethod: "Bank Transfer",
-    },
-    {
-        invoice: "INV004",
-        paymentStatus: "Paid",
-        totalAmount: "$450.00",
-        paymentMethod: "Credit Card",
-    },
-    {
-        invoice: "INV005",
-        paymentStatus: "Paid",
-        totalAmount: "$550.00",
-        paymentMethod: "PayPal",
-    },
-    {
-        invoice: "INV006",
-        paymentStatus: "Pending",
-        totalAmount: "$200.00",
-        paymentMethod: "Bank Transfer",
-    },
-    {
-        invoice: "INV007",
-        paymentStatus: "Unpaid",
-        totalAmount: "$300.00",
-        paymentMethod: "Credit Card",
-    },
-]
 
-export function ValidationTable() {
-    const recentValidations = useRecentValidations()
+type Props = {
+    id?: string
+}
+
+export function ValidationTable(props: Props) {
+    const recentValidations = useRecentValidations(props.id)
     return (
         <Card className="p-5">
             <CardHeader>
-                <CardTitle>Recent Validations</CardTitle>
+                <CardTitle className="truncate">Recent Validations {props.id && "for license " + props.id}</CardTitle>
             </CardHeader>
             <CardContent>
                 <Table>
@@ -83,15 +41,17 @@ export function ValidationTable() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {recentValidations.validations.map((v) => (
-                            <TableRow key={v.id}>
-                                <TableCell className="font-medium">{timeAgo(v.createdAt)}</TableCell>
-                                <TableCell>{v.license?.product ?? "NA"}</TableCell>
-                                <TableCell>{v.succeeded ? "Success" : "Rejected"}</TableCell>
-                                <TableCell>{v.userAgent}</TableCell>
-                                <TableCell className="text-right">{v.ip}</TableCell>
-                            </TableRow>
-                        ))}
+                        {recentValidations.validations.map((v) => {
+                            return (
+                                <TableRow key={v.id}>
+                                    <TableCell className="font-medium">{timeAgo(v.createdAt)}</TableCell>
+                                    <TableCell>{v.license?.product ?? "NA"}</TableCell>
+                                    <TableCell>{v.status}</TableCell>
+                                    <TableCell>{v.userAgent}</TableCell>
+                                    <TableCell className="text-right">{v.ip}</TableCell>
+                                </TableRow>
+                            )
+                        })}
                     </TableBody>
                     <TableFooter>
                         <TableRow>

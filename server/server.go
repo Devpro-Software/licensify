@@ -72,6 +72,11 @@ func (s *Server) Start() {
 	s.db.AutoMigrate(&Validation{})
 	s.db.AutoMigrate(&User{})
 	s.db.AutoMigrate(&Session{})
+
+	if !s.prod {
+		s.createTestUser()
+	}
+
 	g := gin.Default()
 	s.setup(g)
 	g.Run(fmt.Sprintf(":%s", s.port))
@@ -81,19 +86,17 @@ func generateErrorCode() string {
 	return fmt.Sprintf("ERR-%d-%d", time.Now().UnixNano(), rand.Intn(1000))
 }
 
-func (s *Server) saveValidation(c *gin.Context, licenseID string, err error) {
+func (s *Server) saveValidation(c *gin.Context, licenseID string, status ValidationStatus, err error) {
 	v := &Validation{}
 	v.ID = uuid.New().String()
 	if err != nil {
 		v.Error = err.Error()
-		v.Succeeded = false
-	} else {
-		v.Succeeded = true
 	}
 
 	v.UserAgent = c.Request.UserAgent()
 	v.LicenseID = licenseID
 	v.IP = c.ClientIP()
+	v.Status = status
 
 	if err := s.db.Create(v).Error; err != nil {
 		log.Printf("Error creating validation log %s", err.Error())
@@ -111,22 +114,6 @@ func getApiKey(c *gin.Context) string {
 	return c.GetHeader(apiKeyHeader)
 }
 
-func (s *Server) securityFilter(c *gin.Context) {
-	apiKey := getApiKey(c)
-	if apiKey == "" {
-		c.Status(http.StatusUnauthorized)
-		c.Abort()
-		return
-	}
-
-	if s.apiKey != apiKey {
-		c.Status(http.StatusUnauthorized)
-		c.Abort()
-		return
-	}
-	c.Next()
-}
-
 func (s *Server) setup(g *gin.Engine) {
 	g.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
@@ -134,12 +121,13 @@ func (s *Server) setup(g *gin.Engine) {
 		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization", "API-KEY"},
 	}))
 
-	gr := g.Group("/api")
+	gapi := g.Group("/api")
 	gauth := g.Group("/auth")
-	gr.Use(s.authMiddleware)
-	s.setupLicenseEndpoints(gr)
-	s.setupValidationEndpoints(gr)
-	s.setupUserEndpoints(gauth)
+
+	gapi.Use(s.authMiddleware)
+	s.setupLicenseEndpoints(gapi)
+	s.setupValidationEndpoints(gapi)
+	s.setupAuthEndpoints(gauth, gapi)
 
 	g.POST("/api/validate", func(ctx *gin.Context) {
 		var sig licensify.Signature
@@ -152,26 +140,27 @@ func (s *Server) setup(g *gin.Engine) {
 		err := s.verifier.Verify(&sig)
 		if err != nil {
 			http.Error(ctx.Writer, "Invalid signature", http.StatusUnauthorized)
-			s.saveValidation(ctx, "", err)
+			s.saveValidation(ctx, "", StatusInvalidSignature, err)
 			return
 		}
 
 		licenseID := sig.License["license-id"]
 		var license License
 		if err := s.db.First(&license, "id = ?", licenseID).Error; err != nil {
-			internalError(ctx, err)
-			s.saveValidation(ctx, "", err)
+			err := fmt.Errorf("License unavailable")
+			http.Error(ctx.Writer, err.Error(), http.StatusUnauthorized)
+			s.saveValidation(ctx, "", StatusLicenseUnavailable, err)
 			return
 		}
 
 		if !license.Active {
 			err := fmt.Errorf("License Inactive")
 			http.Error(ctx.Writer, err.Error(), http.StatusUnauthorized)
-			s.saveValidation(ctx, licenseID, err)
+			s.saveValidation(ctx, licenseID, StatusLicenseInactive, err)
 			return
 		}
 
-		s.saveValidation(ctx, licenseID, nil)
+		s.saveValidation(ctx, licenseID, StatusAccepted, nil)
 		ctx.Status(http.StatusOK)
 	})
 

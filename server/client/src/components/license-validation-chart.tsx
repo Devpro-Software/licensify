@@ -19,7 +19,7 @@ import {
 import { License } from "@/types/core"
 import { CircleMinus, CirclePlus } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useSWR from "swr"
 import Loader from "./loader"
 import { Button } from "./ui/button"
@@ -50,6 +50,10 @@ export function LicenseValidationBarChart() {
     const { data, isLoading } = useSWR("/api/validations/activity?type=license")
     const stats = data as Stat[]
     const totalStatsNumber = stats?.length || 0
+
+    useEffect(() => {
+        setShowing(Math.min(totalStatsNumber, defaultShowingCount))
+    }, [totalStatsNumber])
 
     stats?.sort((a, b) => {
         return a.totalCount - b.totalCount

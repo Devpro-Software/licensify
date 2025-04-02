@@ -14,44 +14,50 @@ import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
-import { mutate } from "swr"
 import { z } from "zod"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
-import { useSession } from "./auth-provider"
+import { useRouter } from "next/navigation"
 
 
 // TODO: put back to 6
 const formSchema = z.object({
-    username: z.string().min(1, "Username is required"),
+    username: z.string().min(3, "Username must be at least 3 characters long"),
     password: z.string().min(1, "Password must be at least 6 characters"),
+    firstName: z.string().min(1, "First name is required").trim(),
+    lastName: z.string().min(1, "Last name is required").trim(),
 });
 
-export function LoginForm() {
+export function ResgistrationForm() {
+    const router = useRouter()
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
             username: "",
-            password: ""
+            password: "",
+            firstName: "",
+            lastName: ""
         },
     })
 
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
-            const resp = await licensify.post("/auth/login", {
+            const resp = await licensify.post("/auth/register", {
                 username: values.username,
-                password: values.password
+                password: values.password,
+                firstName: values.firstName,
+                lastName: values.lastName
             })
 
-            if (resp.status !== 200) {
-                toast("Login failed.")
+            if (resp.status !== 201) {
+                toast("Registration failed.")
                 return
             }
 
-            toast("Login successful.")
-            mutate("/api/session")
-            window.location.href = "/dashboard"
+
+            toast("Registration successful.")
+            router.push("/login")
         } catch (e) {
-            toast("Login failed.")
+            toast("Registration failed.")
         }
 
     }
@@ -60,9 +66,9 @@ export function LoginForm() {
         <div className={cn("flex flex-col gap-6")} >
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">Login</CardTitle>
+                    <CardTitle className="text-2xl">Register</CardTitle>
                     <CardDescription>
-                        Enter your username and password below to login to your account
+                        Enter your information below to sign up
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -80,7 +86,7 @@ export function LoginForm() {
                                                     <Input placeholder="James123" {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    Your platform username.
+                                                    This is your platform username, unique across your organization.
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
@@ -95,32 +101,66 @@ export function LoginForm() {
                                             <FormItem>
                                                 <FormLabel>
                                                     Password
-                                                    <a
-                                                        href="#"
-                                                        className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                                                    >
-                                                        Forgot your password?
-                                                    </a>
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input type="password" {...field} />
                                                 </FormControl>
                                                 <FormDescription>
-                                                    Your platform password.
+                                                    This is your platform password.
                                                 </FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                 </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="firstName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    First Name
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="James" type="text" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Your first name or nickname.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="lastName"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>
+                                                    Last Name
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="Gordon" type="text" {...field} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Your last name.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </div>
+
                                 <Button type="submit" className="w-full">
-                                    Login
+                                    Register
                                 </Button>
                             </div>
                             <div className="mt-4 text-center text-sm">
-                                Don&apos;t have an account?{" "}
-                                <a href="/register" className="underline underline-offset-4">
-                                    Sign up
+                                Have an account?{" "}
+                                <a href="/login" className="underline underline-offset-4">
+                                    Login
                                 </a>
                             </div>
                         </form>

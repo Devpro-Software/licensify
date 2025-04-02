@@ -1,22 +1,40 @@
 "use client"
 
+import { useSession } from "@/components/auth-provider"
 import LicenseCard from "@/components/license-card"
 import { LicenseForm } from "@/components/license-form"
+import LicenseView from "@/components/license-view"
 import Loader from "@/components/loader"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { License } from "@/types/core"
 import { CirclePlus } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import useSWR from 'swr'
 
 
 export default function Licenses() {
     const { data, error, isLoading, mutate } = useSWR(`/api/licenses`)
+    const { session } = useSession()
+    const params = useSearchParams()
+    const licenseId = params.get("licenseId")
+
+    if (!session) {
+        return
+    }
 
     if (error) {
         return (
             <div>
                 Error occured in fetching licenses
+            </div>
+        )
+    }
+
+    if (licenseId) {
+        return (
+            <div>
+                <LicenseView id={licenseId} />
             </div>
         )
     }
@@ -42,7 +60,7 @@ export default function Licenses() {
                     </DialogContent>
                 </Dialog>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 mt-5">
+            <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mt-5">
                 {isLoading &&
                     <div className="w-[100px]">
                         <Loader />

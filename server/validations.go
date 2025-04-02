@@ -8,8 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Server) setupValidationEndpoints(gr *gin.RouterGroup) {
-	gr.GET("/validations/activity", func(ctx *gin.Context) {
+func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
+	gapi.GET("/validations/activity", func(ctx *gin.Context) {
 		weekStart := time.Now().AddDate(0, 0, -7)
 
 		switch ctx.Query("type") {
@@ -24,7 +24,7 @@ func (s *Server) setupValidationEndpoints(gr *gin.RouterGroup) {
                 WITH stats AS (
                     SELECT
                         license_id,
-                        COUNT(CASE WHEN succeeded = TRUE THEN 1 ELSE NULL END) as success_count,
+                        COUNT(CASE WHEN status = 'Accepted' THEN 1 ELSE NULL END) as success_count,
                         COUNT(*) as total_count
                     FROM validations
                     GROUP BY license_id
@@ -63,9 +63,15 @@ func (s *Server) setupValidationEndpoints(gr *gin.RouterGroup) {
 		}
 	})
 
-	gr.GET("/validations/count", func(ctx *gin.Context) {
+	gapi.GET("/validations/count", func(ctx *gin.Context) {
+		q := s.db.Model(&Validation{})
+		licenseId := ctx.Query("licenseId")
+		if licenseId != "" {
+			q = q.Where("license_id = ?", licenseId)
+		}
+
 		var total int64
-		if err := s.db.Model(&Validation{}).Count(&total).Error; err != nil {
+		if err := q.Count(&total).Error; err != nil {
 			internalError(ctx, err)
 			return
 		}
@@ -73,7 +79,7 @@ func (s *Server) setupValidationEndpoints(gr *gin.RouterGroup) {
 		ctx.JSON(http.StatusOK, total)
 	})
 
-	gr.GET("/validations", func(ctx *gin.Context) {
+	gapi.GET("/validations", func(ctx *gin.Context) {
 		var err error
 		page := 0
 		pageSize := 30
@@ -98,6 +104,12 @@ func (s *Server) setupValidationEndpoints(gr *gin.RouterGroup) {
 
 		query := s.db.Model(&Validation{})
 		query = query.Preload("License")
+
+		licenseId := ctx.Query("licenseId")
+		if licenseId != "" {
+			query = query.Where("license_id = ?", licenseId)
+		}
+
 		query = query.Offset(page * pageSize).Limit(pageSize)
 		query = query.Order("created_at desc")
 

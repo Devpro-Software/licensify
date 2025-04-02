@@ -3,16 +3,16 @@
 import { licensify } from "@/configuraton/axios"
 import { timeAgo } from "@/services/time"
 import { License } from "@/types/core"
-import { CircleCheckBig, CircleMinus, CirclePlay, CircleStop, Pencil, Signature, Trash } from "lucide-react"
+import { CircleArrowOutUpRight, CircleCheckBig, CircleMinus, CirclePlay, CircleStop, Pencil, Trash } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { mutate } from "swr"
 import Loader from "./loader"
+import SignatureViewer from "./signature-viewer"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "./ui/dialog"
-import SignatureViewer from "./signature-viewer"
 import { Input } from "./ui/input"
+import { useRouter } from "next/navigation"
 
 type Props = {
     license: License
@@ -26,6 +26,7 @@ export default function LicenseCard(props: Props) {
     const [loading, setNameLoading] = useState(false)
     const [editName, setEditName] = useState(false)
     const [name, setName] = useState(license.product)
+    const router = useRouter()
 
 
     const deleteLicense = async () => {
@@ -123,7 +124,13 @@ export default function LicenseCard(props: Props) {
             </CardContent>
             <CardFooter>
                 <div className="flex justify-between gap-x-3 w-full">
-                    <SignatureViewer license={license} />
+                    <div className="flex gap-3">
+                        <SignatureViewer license={license} />
+                        <Button onClick={() => router.push(`?licenseId=${license.id}`)} variant={"default"} size={"icon"}>
+                            <CircleArrowOutUpRight />
+                        </Button>
+                    </div>
+
                     <div className="flex gap-3">
                         <Button className="min-w-24" onClick={() => updateLicense(!license.active)}>
                             {toggleLoading &&
