@@ -1,18 +1,14 @@
 "use client"
 
-import { licensify } from "@/configuraton/axios"
 import { timeAgo } from "@/services/time"
 import { License } from "@/types/core"
-import { CircleArrowOutUpRight, CircleCheckBig, CircleMinus, CirclePlay, CircleStop, Pencil, Trash } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
-import { mutate } from "swr"
-import Loader from "./loader"
-import SignatureViewer from "./signature-viewer"
-import { Button } from "./ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
-import { Input } from "./ui/input"
+import { CircleArrowOutUpRight } from "lucide-react"
 import { useRouter } from "next/navigation"
+import LicenseActivationButton from "./license-activation-button"
+import LicenseNameEditor from "./license-name-editor"
+import SignatureDialog from "./signature-builder"
+import { Button } from "./ui/button"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "./ui/card"
 
 type Props = {
     license: License
@@ -20,90 +16,12 @@ type Props = {
 
 export default function LicenseCard(props: Props) {
     const license = props.license
-    const [deleteLoading, setDeleteLoading] = useState(false)
-    const [toggleLoading, setToggleLoading] = useState(false)
-
-    const [loading, setNameLoading] = useState(false)
-    const [editName, setEditName] = useState(false)
-    const [name, setName] = useState(license.product)
     const router = useRouter()
-
-
-    const deleteLicense = async () => {
-        setDeleteLoading(true)
-        try {
-            await licensify.delete(`/api/licenses/${license.id}`)
-            mutate("/api/licenses")
-            toast("Successfully deleted license")
-        } catch (e) {
-            toast("Failed to deleted license")
-        } finally {
-            setDeleteLoading(false)
-        }
-    }
-
-    const updateLicense = async (active?: boolean, name?: string) => {
-        if (active !== undefined) {
-            setToggleLoading(true)
-        }
-        if (name) {
-            setNameLoading(true)
-        }
-        try {
-            const params = new URLSearchParams()
-            if (name) {
-                params.set("name", name)
-            }
-            if (active !== undefined) {
-                params.set("active", active ? "true" : "false")
-            }
-
-            await licensify.put(`/api/licenses/${license.id}?${params.toString()}`)
-            mutate("/api/licenses")
-        } catch (e) {
-            const str = active ? "activate" : "deactivate"
-            toast(`Failed to ${str} license`)
-            console.log(e)
-        } finally {
-            setToggleLoading(false)
-            setNameLoading(false)
-        }
-    }
-
-    const truncate = (str: string, maxLength: number): string => {
-        return str.length > maxLength ? str.slice(0, maxLength) + '...' : str;
-    }
-
 
     return (
         <Card className="h-full w-full">
             <CardHeader>
-                {!editName &&
-                    <div className="flex items-center justify-between gap-x-5">
-                        <CardTitle className="text-2xl font-bold truncate max-w-36 md:max-w-64">
-                            {license.product}
-                        </CardTitle>
-                        <Button onClick={() => {
-                            setEditName(true)
-                        }} variant={"outline"} size={"icon"}>
-                            <Pencil />
-                        </Button>
-                    </div>
-                }
-                {editName &&
-                    <form onSubmit={async () => {
-                        await updateLicense(undefined, name)
-                    }} className="flex items-center justify-start gap-x-3">
-                        <Input autoFocus className="" value={name} onChange={s => setName(s.target.value)} />
-                        <Button onClick={() => setEditName(false)} type="button" variant={"ghost"}>
-                            <CircleMinus />
-                        </Button>
-                        <Button type="submit" variant={"ghost"}>
-                            <CircleCheckBig />
-                        </Button>
-                    </form>
-                }
-
+                <LicenseNameEditor mutatePath="/api/licenses" name={license.name} id={license.id} />
                 <CardDescription className="text-nowrap overflow-x-hidden">{license.id}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -123,35 +41,17 @@ export default function LicenseCard(props: Props) {
                 </div>
             </CardContent>
             <CardFooter>
-                <div className="flex justify-between gap-x-3 w-full">
+                <div className="flex justify-between gap-3 w-full flex-wrap">
                     <div className="flex gap-3">
-                        <SignatureViewer license={license} />
+                        <SignatureDialog id={license.id} />
                         <Button onClick={() => router.push(`?licenseId=${license.id}`)} variant={"default"} size={"icon"}>
                             <CircleArrowOutUpRight />
                         </Button>
                     </div>
 
                     <div className="flex gap-3">
-                        <Button className="min-w-24" onClick={() => updateLicense(!license.active)}>
-                            {toggleLoading &&
-                                <Loader dark />
-                            }
-                            {!toggleLoading &&
-                                <>
-                                    {license.active ? "Deactivate" : "Activate"}
-                                    {license.active ? <CircleStop /> : <CirclePlay />}
-                                </>
-                            }
-                        </Button>
-                        <Button disabled={deleteLoading} onClick={() => deleteLicense()} variant={"destructive"} size={"icon"}>
-                            {!deleteLoading &&
-                                <Trash />
-                            }
-
-                            {deleteLoading &&
-                                <Loader />
-                            }
-                        </Button>
+                        <LicenseActivationButton mutatePath="/api/licenses" id={license.id} active={license.active} />
+                        {/* <LicenseDeleteButton mutatePath={"/api/licenses"} id={license.id} /> */}
                     </div>
                 </div>
             </CardFooter>

@@ -12,9 +12,9 @@ type Model struct {
 
 type License struct {
 	Model
-	Active  bool                   `json:"active"`
-	Product string                 `json:"product"`
-	Data    map[string]interface{} `gorm:"serializer:json" json:"data"`
+	Active bool                   `json:"active"`
+	Name   string                 `json:"name"`
+	Data   map[string]interface{} `gorm:"serializer:json" json:"data"`
 }
 
 type Validation struct {
@@ -25,6 +25,26 @@ type Validation struct {
 	LicenseID string           `json:"-" gorm:"default:null"`
 	License   *License         `json:"license"`
 	Status    ValidationStatus `json:"status"`
+
+	Signature string   `json:"signature" gorm:"default:null"`
+	TrackerID string   `json:"-" gorm:"default:null"`
+	Tracker   *Tracker `json:"tracker"`
+}
+
+type Tracker struct {
+	Model
+	LicenseID     string     `json:"-" gorm:"default:null"`
+	License       *License   `json:"license"`
+	Name          string     `json:"name"`
+	Enabled       bool       `json:"enabled"`
+	ActivatedDate *time.Time `json:"activatedDate"`
+}
+
+type ClaimPreset struct {
+	Model
+	LicenseID string                 `json:"-" gorm:"default:null"`
+	License   *License               `json:"license"`
+	Data      map[string]interface{} `gorm:"serializer:json" json:"data"`
 }
 
 type User struct {
@@ -44,12 +64,19 @@ type Session struct {
 	Expires time.Time `json:"expires"`
 }
 
+type Client struct {
+	Model
+	ApiKey string `json:"apiKey" gorm:"unqiue"`
+}
+
 type ValidationStatus string
 
 const (
-	StatusAccepted           ValidationStatus = "Accepted"
-	StatusInvalidSignature   ValidationStatus = "InvalidSignature"
-	StatusLicenseInactive    ValidationStatus = "LicenseInactive"
-	StatusLicenseUnavailable ValidationStatus = "LicenseUnavailable"
-	StatusInternalError      ValidationStatus = "InternalError"
+	StatusAccepted            ValidationStatus = "Accepted"
+	StatusInvalidSignature    ValidationStatus = "InvalidSignature"
+	StatusLicenseInactive     ValidationStatus = "LicenseInactive"
+	StatusLicenseUnavailable  ValidationStatus = "LicenseUnavailable"
+	StatusTrackerDisabled     ValidationStatus = "TrackerDisabled"
+	StatusTrackerNotActivated ValidationStatus = "TrackerNotActivated"
+	StatusInternalError       ValidationStatus = "InternalError"
 )

@@ -9,9 +9,12 @@ type Props = {
 
 export default function CodeBlock({ code, lang }: Props) {
     return (
-        <div>
-            <ScrollArea className="max-w-[500px]">
-                <SyntaxHighlighter language={lang} style={vs2015}>
+        <div className="w-sm md:w-md 2xl:w-lg">
+            <ScrollArea className="w-full h-full">
+                <SyntaxHighlighter customStyle={{
+                }} lineNumberStyle={{
+                    color: "gray",
+                }} showLineNumbers language={lang} style={vs2015}>
                     {code}
                 </SyntaxHighlighter>
                 <ScrollBar orientation="horizontal" />

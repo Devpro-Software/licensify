@@ -1,6 +1,8 @@
 package main
 
 import (
+	cyrptrand "crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -70,8 +72,11 @@ func (s *Server) Start() {
 
 	s.db.AutoMigrate(&License{})
 	s.db.AutoMigrate(&Validation{})
+	s.db.AutoMigrate(&ClaimPreset{})
+	s.db.AutoMigrate(&Tracker{})
 	s.db.AutoMigrate(&User{})
 	s.db.AutoMigrate(&Session{})
+	s.db.AutoMigrate(&Client{})
 
 	if !s.prod {
 		s.createTestUser()
@@ -86,7 +91,7 @@ func generateErrorCode() string {
 	return fmt.Sprintf("ERR-%d-%d", time.Now().UnixNano(), rand.Intn(1000))
 }
 
-func (s *Server) saveValidation(c *gin.Context, licenseID string, status ValidationStatus, err error) {
+func (s *Server) saveValidation(c *gin.Context, licenseID string, trackerID string, status ValidationStatus, sig *licensify.Signature, err error) {
 	v := &Validation{}
 	v.ID = uuid.New().String()
 	if err != nil {
@@ -95,8 +100,16 @@ func (s *Server) saveValidation(c *gin.Context, licenseID string, status Validat
 
 	v.UserAgent = c.Request.UserAgent()
 	v.LicenseID = licenseID
+	v.TrackerID = trackerID
 	v.IP = c.ClientIP()
 	v.Status = status
+
+	if sig != nil {
+		b, _ := json.Marshal(sig)
+		v.Signature = string(b)
+	} else {
+		v.Signature = ""
+	}
 
 	if err := s.db.Create(v).Error; err != nil {
 		log.Printf("Error creating validation log %s", err.Error())
@@ -126,12 +139,14 @@ func (s *Server) setup(g *gin.Engine) {
 
 	gapi.Use(s.authMiddleware)
 	s.setupLicenseEndpoints(gapi)
+	s.setupTrackerEndpoints(gapi)
 	s.setupValidationEndpoints(gapi)
 	s.setupAuthEndpoints(gauth, gapi)
 
 	g.POST("/api/validate", func(ctx *gin.Context) {
 		var sig licensify.Signature
 		if err := json.NewDecoder(ctx.Request.Body).Decode(&sig); err != nil {
+			s.saveValidation(ctx, "", "", StatusInvalidSignature, nil, err)
 			internalError(ctx, err)
 			return
 		}
@@ -139,8 +154,8 @@ func (s *Server) setup(g *gin.Engine) {
 
 		err := s.verifier.Verify(&sig)
 		if err != nil {
-			http.Error(ctx.Writer, "Invalid signature", http.StatusUnauthorized)
-			s.saveValidation(ctx, "", StatusInvalidSignature, err)
+			ctx.String(http.StatusUnauthorized, "Invalid signature")
+			s.saveValidation(ctx, "", "", StatusInvalidSignature, &sig, err)
 			return
 		}
 
@@ -148,20 +163,88 @@ func (s *Server) setup(g *gin.Engine) {
 		var license License
 		if err := s.db.First(&license, "id = ?", licenseID).Error; err != nil {
 			err := fmt.Errorf("License unavailable")
-			http.Error(ctx.Writer, err.Error(), http.StatusUnauthorized)
-			s.saveValidation(ctx, "", StatusLicenseUnavailable, err)
+			ctx.String(http.StatusUnauthorized, err.Error())
+			s.saveValidation(ctx, "", "", StatusLicenseUnavailable, &sig, err)
 			return
+		}
+
+		var tracker *Tracker
+		trackerId := ""
+		if sig.License["tracker"] != "" {
+			var t Tracker
+			if s.db.First(&t, "id = ?", sig.License["tracker"]).Error == nil {
+				tracker = &t
+				trackerId = tracker.ID
+			}
 		}
 
 		if !license.Active {
 			err := fmt.Errorf("License Inactive")
-			http.Error(ctx.Writer, err.Error(), http.StatusUnauthorized)
-			s.saveValidation(ctx, licenseID, StatusLicenseInactive, err)
+			ctx.String(http.StatusUnauthorized, err.Error())
+			s.saveValidation(ctx, licenseID, trackerId, StatusLicenseInactive, &sig, err)
 			return
 		}
 
-		s.saveValidation(ctx, licenseID, StatusAccepted, nil)
+		if tracker != nil {
+			if !tracker.Enabled {
+				ctx.String(http.StatusUnauthorized, "Tracker Disabled")
+				s.saveValidation(ctx, licenseID, trackerId, StatusTrackerDisabled, &sig, err)
+				return
+			}
+
+			if tracker.ActivatedDate == nil {
+				ctx.String(http.StatusUnauthorized, "Tracker Not Activated")
+				s.saveValidation(ctx, licenseID, trackerId, StatusTrackerNotActivated, &sig, err)
+				return
+			}
+		}
+
+		s.saveValidation(ctx, licenseID, trackerId, StatusAccepted, &sig, nil)
 		ctx.Status(http.StatusOK)
+	})
+
+	gapi.POST("/client", func(ctx *gin.Context) {
+		var client Client
+		if s.db.First(&client).Error != nil {
+			client = Client{}
+			client.ID = uuid.NewString()
+		}
+
+		bytes := make([]byte, 32)
+		if _, err := cyrptrand.Read(bytes); err != nil {
+			internalError(ctx, err)
+			return
+		}
+		client.ApiKey = base64.URLEncoding.EncodeToString(bytes)
+		s.db.Save(&client)
+		ctx.JSON(http.StatusOK, client)
+	})
+
+	gapi.GET("/client", func(ctx *gin.Context) {
+		var client Client
+		if s.db.First(&client).Error == nil {
+			ctx.JSON(http.StatusOK, client)
+		} else {
+			ctx.JSON(http.StatusOK, gin.H{})
+		}
+	})
+
+	gapi.POST("/keys", func(ctx *gin.Context) {
+		pub, err := ctx.FormFile("publicKey")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		priv, err := ctx.FormFile("privateKey")
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// TODO:
+		fmt.Println(pub.Filename)
+		fmt.Println(priv.Filename)
 	})
 
 	g.NoRoute(func(ctx *gin.Context) {

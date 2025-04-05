@@ -14,7 +14,7 @@ import {
 // Menu items.
 const items = [
     {
-        title: "Product Licenses",
+        title: "Licenses",
         url: "/dashboard/licenses",
         icon: Book,
     },

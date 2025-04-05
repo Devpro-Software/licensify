@@ -10,10 +10,33 @@ import (
 
 func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 	gapi.GET("/validations/activity", func(ctx *gin.Context) {
-		weekStart := time.Now().AddDate(0, 0, -7)
-
 		switch ctx.Query("type") {
 		case "license":
+			id := ctx.Query("licenseId")
+			var result []struct {
+				Date         string `json:"date"`
+				Count        int    `json:"count"`
+				SuccessCount int    `json:"successCount"`
+			}
+
+			start := time.Now().AddDate(0, -1, 0)
+			err := s.db.Raw(`
+                SELECT
+                    date(created_at) AS date,
+                    COUNT(*) AS count,
+                    COUNT(CASE WHEN status = 'Accepted' THEN 1 ELSE NULL END) as success_count
+                FROM validations
+                WHERE created_at >= ? AND license_id = ?
+                GROUP BY date(created_at)
+                ORDER BY date(created_at) ASC
+                `, start, id).Scan(&result).Error
+			if err != nil {
+				internalError(ctx, err)
+				return
+			}
+
+			ctx.JSON(http.StatusOK, &result)
+		case "licenses":
 			var result []struct {
 				*License     `json:"license"`
 				SuccessCount int64 `json:"successCount"`
@@ -41,18 +64,19 @@ func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 			ctx.JSON(http.StatusOK, result)
 
 		default:
+			weekStart := time.Now().AddDate(0, 0, -7)
 			var result []struct {
 				Date  string `json:"date"`
 				Count int    `json:"count"`
 			}
 			err := s.db.Raw(`
-		SELECT
-			date(created_at) AS date,
-			COUNT(*) AS count
-		FROM validations
-		WHERE created_at >= ?
-		GROUP BY date(created_at)
-		ORDER BY date(created_at) ASC
+            SELECT
+                date(created_at) AS date,
+                COUNT(*) AS count
+            FROM validations
+            WHERE created_at >= ?
+            GROUP BY date(created_at)
+            ORDER BY date(created_at) ASC
 	`, weekStart).Scan(&result).Error
 			if err != nil {
 				internalError(ctx, err)
@@ -88,7 +112,7 @@ func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 		if pageStr != "" {
 			page, err = strconv.Atoi(pageStr)
 			if err != nil || page < 0 {
-				http.Error(ctx.Writer, "Invalid page value", http.StatusOK)
+				ctx.String(http.StatusBadRequest, "Invalid page value")
 				return
 			}
 		}
@@ -97,7 +121,7 @@ func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 		if pageSizeStr != "" {
 			pageSize, err = strconv.Atoi(pageSizeStr)
 			if err != nil || pageSize < 0 {
-				http.Error(ctx.Writer, "Invalid pageSize value", http.StatusOK)
+				ctx.String(http.StatusBadRequest, "Invalid pageSize value")
 				return
 			}
 		}

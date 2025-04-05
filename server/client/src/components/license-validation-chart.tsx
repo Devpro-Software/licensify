@@ -1,12 +1,12 @@
 "use client"
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import * as React from "react"
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card"
@@ -16,127 +16,139 @@ import {
     ChartTooltip,
     ChartTooltipContent,
 } from "@/components/ui/chart"
-import { License } from "@/types/core"
-import { CircleMinus, CirclePlus } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
 import useSWR from "swr"
-import Loader from "./loader"
-import { Button } from "./ui/button"
+
 
 const chartConfig = {
-    desktop: {
-        label: "Desktop",
-        color: "hsl(var(--chart-1))",
+    validations: {
+        label: "Validations",
     },
-    mobile: {
-        label: "Mobile",
-        color: "hsl(var(--chart-2))",
+    success: {
+        label: "Successful",
+        color: "#2661d9",
+    },
+    rejection: {
+        label: "Rejections",
+        color: "#e88c30",
     },
 } satisfies ChartConfig
 
-type Stat = {
-    license: License
-    successCount: number
-    totalCount: number
+type Props = {
+    licenseId: string
 }
 
-const defaultShowingCount = 5
+type Stat = {
+    date: string
+    count: number
+    successCount: number
+}
 
-export function LicenseValidationBarChart() {
-    const [showing, setShowing] = useState(defaultShowingCount)
-
-    const router = useRouter()
-    const { data, isLoading } = useSWR("/api/validations/activity?type=license")
+export function LicenseValidationChart(props: Props) {
+    const params = new URLSearchParams()
+    params.set("type", "license")
+    params.set("licenseId", props.licenseId)
+    const { data } = useSWR(`/api/validations/activity?${params.toString()}`)
     const stats = data as Stat[]
-    const totalStatsNumber = stats?.length || 0
 
-    useEffect(() => {
-        setShowing(Math.min(totalStatsNumber, defaultShowingCount))
-    }, [totalStatsNumber])
+    const [activeChart, setActiveChart] =
+        React.useState<keyof typeof chartConfig>("success")
 
-    stats?.sort((a, b) => {
-        return a.totalCount - b.totalCount
-    })
+    const total = React.useMemo(
+        () => ({
+            success: stats?.reduce((acc, curr) => acc + curr.successCount, 0),
+            rejection: stats?.reduce((acc, curr) => acc + (curr.count - curr.successCount), 0),
+        }),
+        [stats]
+    )
 
-    const cdata = stats?.slice(0, showing)?.map(s => {
-        return {
-            license: s.license.product,
-            successful: s.successCount,
-            rejected: s.totalCount - s.successCount,
-            id: s.license.id
-        }
-    }) ?? []
-
-    let totalRejections = 0
-    let totalSuccess = 0
-    stats?.forEach(s => {
-        totalRejections += s.totalCount - s.successCount
-        totalSuccess += s.successCount
-    })
-
-    const goto = (licenseID: string) => router.push(`/dashboard/licenses/${licenseID}`)
+    const cdata = React.useMemo(() => {
+        return stats?.map(s => {
+            return {
+                date: new Date(s.date).toISOString().split("T")[0],
+                success: s.successCount,
+                rejection: s.count - s.successCount
+            }
+        })
+    }, [stats])
 
     return (
         <Card>
-            <CardHeader className="flex">
-                <div>
-                    <CardTitle>
-                        Validations by license
-                    </CardTitle>
+            <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
+                <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
+                    <CardTitle>Activity for License</CardTitle>
                     <CardDescription>
-                        successful and rejected validations by license
-                        {isLoading &&
-                            <div className="w-[50px]">
-                                <Loader />
-                            </div>
-                        }
+                        Showing daily validation requests for the last month
                     </CardDescription>
                 </div>
-                <div className="ml-14 flex justify-center items-center text-muted-foreground">
-                    <Button onClick={() => setShowing(p => p <= 0 ? p : p - 1)} variant={"ghost"} size={"icon"}>
-                        <CircleMinus />
-                    </Button>
-                    <p className="text-secondary-foreground">
-                        Showing {showing}
-                    </p>
-                    <Button onClick={() => setShowing(p => p >= totalStatsNumber ? p : p + 1)} variant={"ghost"} size={"icon"}>
-                        <CirclePlus />
-                    </Button>
+                <div className="flex">
+                    {["success", "rejection"].map((key) => {
+                        const chart = key as keyof typeof chartConfig
+                        return (
+                            <button
+                                key={chart}
+                                data-active={activeChart === chart}
+                                className="relative z-30 flex flex-1 flex-col justify-center gap-1 border-t px-6 py-4 text-left even:border-l data-[active=true]:bg-muted/50 sm:border-l sm:border-t-0 sm:px-8 sm:py-6"
+                                onClick={() => setActiveChart(chart)}
+                            >
+                                <span className="text-xs text-muted-foreground">
+                                    {chartConfig[chart].label}
+                                </span>
+                                <span className="text-lg font-bold leading-none sm:text-3xl">
+                                    {total[key as keyof typeof total]?.toLocaleString()}
+                                </span>
+                            </button>
+                        )
+                    })}
                 </div>
             </CardHeader>
-            <CardContent>
-                <ChartContainer config={chartConfig}>
-                    <BarChart accessibilityLayer data={cdata}>
+            <CardContent className="px-2 sm:p-6">
+                <ChartContainer
+                    config={chartConfig}
+                    className="aspect-auto h-[250px] w-full"
+                >
+                    <BarChart
+                        accessibilityLayer
+                        data={cdata}
+                        margin={{
+                            left: 12,
+                            right: 12,
+                        }}
+                    >
                         <CartesianGrid vertical={false} />
-                        <YAxis
-                            axisLine={false}
-                        />
                         <XAxis
-                            dataKey="license"
+                            dataKey="date"
                             tickLine={false}
-                            tickMargin={10}
                             axisLine={false}
-                            tickFormatter={(value) => value.slice(0, 10)}
+                            tickMargin={8}
+                            minTickGap={32}
+                            tickFormatter={(value) => {
+                                const date = new Date(value)
+                                return date.toLocaleDateString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                })
+                            }}
                         />
                         <ChartTooltip
-                            cursor={false}
-                            content={<ChartTooltipContent indicator="dashed" />}
+                            content={
+                                <ChartTooltipContent
+                                    className="w-[150px]"
+                                    nameKey="validations"
+                                    labelFormatter={(value) => {
+                                        return new Date(value).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            year: "numeric",
+                                        })
+                                    }}
+                                />
+                            }
                         />
-                        <Bar onClick={(s) => goto(s.id)} dataKey="successful" fill="#2661d9" radius={4} />
-                        <Bar onClick={(s) => goto(s.id)} dataKey="rejected" fill="#e88c30" radius={4} />
-
+                        <Bar dataKey={activeChart} fill={`var(--color-${activeChart})`} />
                     </BarChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter className="flex-col items-start gap-2 text-sm">
-                <div className="flex gap-2 font-medium leading-none">
-                    {totalSuccess} total successful validations - {totalRejections} total rejections
-                </div>
-                <div className="leading-none text-muted-foreground">
-                    Showing your top {cdata.length} products
-                </div>
-            </CardFooter>
         </Card>
     )
 }
+

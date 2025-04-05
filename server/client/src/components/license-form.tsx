@@ -26,7 +26,11 @@ const formSchema = z.object({
     active: z.boolean().default(false)
 })
 
-export function LicenseForm() {
+type Props = {
+    onSubmit?: () => void
+}
+
+export function LicenseForm(props: Props) {
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -38,13 +42,16 @@ export function LicenseForm() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         try {
             const resp = await licensify.post("/api/licenses", {
-                product: values.name,
-                data: null,
+                name: values.name,
+                data: {},
                 active: values.active
             })
             const newLicense = resp.data as License
             mutate("/api/licenses")
-            toast("Successfully created license " + newLicense.product)
+            toast("Successfully created license " + newLicense.name)
+            if (props.onSubmit) {
+                props.onSubmit()
+            }
         } catch (e) {
             toast("Unable to create license")
         }
@@ -59,12 +66,12 @@ export function LicenseForm() {
                     name="name"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Product Name</FormLabel>
+                            <FormLabel>License Name</FormLabel>
                             <FormControl>
-                                <Input placeholder="My Great Product" {...field} />
+                                <Input placeholder="My Software License" {...field} />
                             </FormControl>
                             <FormDescription>
-                                This is the name of your product.
+                                This is the name of your license.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -80,7 +87,7 @@ export function LicenseForm() {
                                 <Switch checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
                             <FormDescription>
-                                Whether this product is active, you can change this later
+                                Whether this license is active, you can change this later
                             </FormDescription>
                             <FormMessage />
                         </FormItem>

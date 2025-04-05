@@ -1,10 +1,16 @@
 "use client"
 
-import useSWR from "swr"
-import Loader from "./loader"
 import { License } from "@/types/core"
+import useSWR from "swr"
+import GettingStarted from "./getting-started"
+import LicenseActivationButton from "./license-activation-button"
+import LicenseNameEditor from "./license-name-editor"
+import { LicenseValidationChart } from "./license-validation-chart"
+import Loader from "./loader"
+import SignatureDialog from "./signature-builder"
 import { ValidationTable } from "./validation-table"
-import SignatureViewer from "./signature-viewer"
+import LicenseCustomDataCard from "./license-custom-data-card"
+import TrackerTable from "./tracker-table"
 
 type Props = {
     id: string
@@ -27,19 +33,31 @@ export default function LicenseView({ id }: Props) {
 
     return (
         <div>
-            <div className="mb-6">
+            <div className="mb-6 flex justify-between items-center gap-x-5">
                 <div>
-                    <h4 className="text-4xl font-bold mb-3">{license.product}</h4>
+                    <LicenseNameEditor mutatePath={`/api/licenses/${id}`} large id={license.id} name={license.name} />
                     <h4 className="text-lg text-muted-foreground">ID: {license.id}</h4>
                 </div>
-                {/* <SignatureViewer  /> */}
-            </div>
-            <div className="grid">
-                <div>
-                    <ValidationTable id={license.id} />
+                <div className="flex gap-3">
+                    <LicenseActivationButton mutatePath={`/api/licenses/${id}`} id={license.id} active={license.active} />
+                    <SignatureDialog id={license.id} />
                 </div>
-                <div>
-
+            </div>
+            <div className="grid grid-cols-2 gap-5">
+                <div className="col-span-2 xl:col-span-1">
+                    <GettingStarted license={license} />
+                </div>
+                <div className="col-span-2 xl:col-span-1">
+                    <LicenseCustomDataCard mutatePath={`/api/licenses/${id}`} id={license.id} data={license.data} />
+                </div>
+                <div className="col-span-2">
+                    <TrackerTable licenseId={license.id} />
+                </div>
+                <div className="col-span-2">
+                    <LicenseValidationChart licenseId={license.id} />
+                </div>
+                <div className="col-span-2">
+                    <ValidationTable id={license.id} />
                 </div>
             </div>
         </div>

@@ -9,7 +9,7 @@ import { mutate } from "swr";
 import { z } from "zod";
 import { useSession } from "./auth-provider";
 import { Button } from "./ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
 
@@ -61,9 +61,10 @@ export default function ProfileCard({ }: Props) {
     }
 
     return (
-        <Card>
+        <Card className="size-full">
             <CardHeader>
                 <CardTitle className="text-2xl">Profile</CardTitle>
+                <CardDescription>Change your personal information.</CardDescription>
             </CardHeader>
             <CardContent>
                 <Form {...form}>

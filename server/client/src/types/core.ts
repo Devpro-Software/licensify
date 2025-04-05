@@ -4,16 +4,27 @@ export type License = {
     createdAt: string
     updatedAt: string
     active: boolean
-    product: string
-    data: unknown
+    name: string
+    data: {
+        [key: string]: unknown
+    }
 }
 
 export type Signature = {
     sig: string
     license: {
-        product: string
-        "license-id": string
+        [k: string]: unknown
     }
+}
+
+export type Tracker = {
+    id: string
+    createdAt: string
+    updatedAt: string
+    name: string
+    license: License
+    activatedDate?: string
+    enabled: boolean
 }
 
 export type Validation = {
@@ -25,6 +36,7 @@ export type Validation = {
     userAgent: string
     ip: string
     license?: License
+    signature?: string
 }
 
 export type User = {
