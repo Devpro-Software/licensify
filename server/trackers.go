@@ -23,6 +23,10 @@ func (s *Server) setupTrackerEndpoints(gapi *gin.RouterGroup) {
 		page := 0
 		pageSize := 30
 
+		q := s.db.Model(&Tracker{})
+		q = s.db.Preload("License")
+		q = q.Where("license_id = ?", license.ID)
+
 		pageStr := c.Query("page")
 		if pageStr != "" {
 			page, err = strconv.Atoi(pageStr)
@@ -41,11 +45,14 @@ func (s *Server) setupTrackerEndpoints(gapi *gin.RouterGroup) {
 			}
 		}
 
-		q := s.db.Model(&Tracker{})
-		q = s.db.Preload("License")
-		q = q.Order("created_at ASC")
+		name := c.Query("name")
+		if name != "" {
+			search := "%" + name + "%"
+			q = q.Where("name LIKE ?", search)
+		}
+
 		q = q.Offset(page * pageSize).Limit(pageSize)
-		q = q.Order("created_at desc")
+		q = q.Order("created_at DESC")
 
 		var trackers []*Tracker
 		err = q.Find(&trackers).Error
@@ -102,6 +109,17 @@ func (s *Server) setupTrackerEndpoints(gapi *gin.RouterGroup) {
 		c.JSON(http.StatusOK, count)
 	})
 
+	gapi.GET("/trackers/:id", func(c *gin.Context) {
+		trackerID := c.Param("id")
+		var tracker Tracker
+		if err := s.db.Preload("License").First(&tracker, "id = ?", trackerID).Error; err != nil {
+			http.NotFound(c.Writer, c.Request)
+			return
+		}
+
+		c.JSON(http.StatusOK, tracker)
+	})
+
 	gapi.PUT("/trackers/:id", func(c *gin.Context) {
 		trackerID := c.Param("id")
 		var tracker Tracker
@@ -145,6 +163,13 @@ func (s *Server) setupTrackerEndpoints(gapi *gin.RouterGroup) {
 		var tracker Tracker
 		if err := s.db.First(&tracker, "id = ?", trackerID).Error; err != nil {
 			http.NotFound(c.Writer, c.Request)
+			return
+		}
+
+		if err := s.db.Model(&Validation{}).
+			Where("tracker_id = ?", tracker.ID).
+			Update("tracker_id", nil).Error; err != nil {
+			internalError(c, err)
 			return
 		}
 

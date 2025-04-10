@@ -2,15 +2,8 @@ import { useState } from "react"
 import { Button } from "./ui/button"
 import { Clipboard, ClipboardCheck } from "lucide-react"
 
-type Props = {}
 
-export default function CopyBlock({ }: Props) {
-    return (
-        <div>CopyBlock</div>
-    )
-}
-
-export function CopyButton({ content }: { content: string }) {
+export function CopyButton({ content, ...props }: { content: string, ghost?: boolean }) {
     const [copied, setCopied] = useState(false)
     const handleCopy = () => {
         navigator.clipboard.writeText(content).then(() => setCopied(true))
@@ -18,7 +11,7 @@ export function CopyButton({ content }: { content: string }) {
     }
 
     return (
-        <Button onClick={handleCopy} size={"icon"} variant={"outline"}>
+        <Button onClick={handleCopy} size={"icon"} variant={props.ghost ? "ghost" : "outline"}>
             {!copied && <Clipboard />}
             {copied && <ClipboardCheck />}
         </Button>

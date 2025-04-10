@@ -1,17 +1,22 @@
 "use client"
 
-import { licensify } from "@/configuraton/axios"
 import { timeAgo } from "@/services/time"
 import { Tracker } from "@/types/core"
-import { Check, CirclePlay, CirclePlus, CircleStop, Timer, Trash } from "lucide-react"
+import { ChartColumn, CircleArrowOutUpRight } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
-import { toast } from "sonner"
-import useSWR, { mutate } from "swr"
-import InlineEditor from "./inline-editor"
+import useSWR from "swr"
+import ActivateTrackerButton from "./activate-tracker-button"
+import CreateTrackerButton from "./create-tracker-button"
+import DeleteTrackerButton from "./delete-tracker-button"
+import EnableTrackerButton from "./enable-tracker-button"
+import SignatureDialog from "./signature-builder"
 import { Button } from "./ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "./ui/card"
+import { Input } from "./ui/input"
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
-import SignatureDialog from "./signature-builder"
+import UpdateTrackerNameEditor from "./update-tracker-editor"
+import BooleanBadge from "./boolean-badge"
 
 type Props = {
     licenseId: string
@@ -21,69 +26,23 @@ export default function TrackerTable({ licenseId }: Props) {
     const { data: count } = useSWR(`/api/licenses/${licenseId}/trackers/count`)
     const totalCount = count as number ?? 0
 
-    const [page, setPage] = useState(0)
+    const router = useRouter()
+    const searchParams = useSearchParams()
 
-    const endpoint = page > 0 ? `/api/licenses/${licenseId}/trackers?page=${page}` : `/api/licenses/${licenseId}/trackers`
+    const [page, setPage] = useState(0)
+    const [search, setSearch] = useState("")
+
+    const params = new URLSearchParams()
+    if (search) {
+        params.set("name", search)
+    }
+    if (page > 0) {
+        params.set("page", page.toString())
+    }
+
+    const endpoint = params.size > 0 ? `/api/licenses/${licenseId}/trackers?${params.toString()}` : `/api/licenses/${licenseId}/trackers`
     const { data } = useSWR(endpoint)
     const trackers = data as Tracker[]
-
-
-    const createTracker = async () => {
-        try {
-            await licensify.post(`/api/licenses/${licenseId}/trackers`)
-            toast("Successfully created tracker")
-            mutate(endpoint)
-        } catch (e) {
-            console.log(e)
-            toast("Failed to create tracker")
-        }
-    }
-
-    const updateName = async (id: string, s: string) => {
-        try {
-            const params = new URLSearchParams()
-            params.set("name", s)
-            await licensify.put(`/api/trackers/${id}?${params.toString()}`)
-            toast("Successfully renamed tracker")
-            mutate(endpoint)
-        } catch (e) {
-            console.log(e)
-            toast("Failed to update tracker")
-        }
-    }
-
-    const deleteTracker = async (id: string) => {
-        try {
-            await licensify.delete(`/api/trackers/${id}`)
-            toast("Successfully deleted tracker")
-            mutate(endpoint)
-        } catch (e) {
-            console.log(e)
-            toast("Failed to delete tracker")
-        }
-    }
-
-    const enableTracker = async (id: string, enabled: boolean) => {
-        try {
-            await licensify.put(`/api/trackers/${id}?enabled=${enabled}`)
-            toast("Successfully updated tracker")
-            mutate(endpoint)
-        } catch (e) {
-            console.log(e)
-            toast("Failed to update tracker")
-        }
-    }
-
-    const activateTracker = async (id: string, active: boolean) => {
-        try {
-            await licensify.put(`/api/trackers/${id}?activated=${active}`)
-            toast("Successfully updated tracker")
-            mutate(endpoint)
-        } catch (e) {
-            console.log(e)
-            toast("Failed to update tracker")
-        }
-    }
 
     trackers?.sort((a, b) => {
         return new Date(a.createdAt) > new Date(b.createdAt) ? -1 : 1
@@ -93,12 +52,12 @@ export default function TrackerTable({ licenseId }: Props) {
         <Card className="size-full">
             <CardHeader>
                 <CardTitle>Trackers</CardTitle>
-                <CardDescription>Trackers are tags that can control and track the lifecycle of specific signatures. Allows for powerful use cases for example license activation flows.</CardDescription> </CardHeader>
+                <CardDescription>Trackers are tags that can be added to signatures and hold server side state that can control and track specific signature lifecycles.</CardDescription>
+                <Input className="w-md mt-4" placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} />
+            </CardHeader>
             <CardContent>
                 <div className="flex justify-end">
-                    <Button onClick={createTracker} variant={"default"} size={"icon"}>
-                        <CirclePlus />
-                    </Button>
+                    <CreateTrackerButton mutatePath={endpoint} licenseId={licenseId} />
                 </div>
                 <Table>
                     <TableCaption>Trackers</TableCaption>
@@ -110,7 +69,7 @@ export default function TrackerTable({ licenseId }: Props) {
                             <TableHead>Last Validated</TableHead>
                             <TableHead>Activated</TableHead>
                             <TableHead>Enabled</TableHead>
-                            <TableHead>Action</TableHead>
+                            <TableHead>Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -119,33 +78,33 @@ export default function TrackerTable({ licenseId }: Props) {
                                 <TableRow key={t.id}>
                                     <TableCell className="text-muted-foreground">{t.id}</TableCell>
                                     <TableCell className="">
-                                        <InlineEditor small value={t.name} onSubmit={s => updateName(t.id, s)} />
+                                        <UpdateTrackerNameEditor ghost value={t.name} id={t.id} mutatePath={endpoint} />
                                     </TableCell>
                                     <TableCell>{timeAgo(t.createdAt)}</TableCell>
                                     <TableCell>Last Validated</TableCell>
-                                    <TableCell>{t.activatedDate ? timeAgo(t.activatedDate) : "Not activated"}</TableCell>
-                                    <TableCell>{t.enabled ? "Yes" : "No"}</TableCell>
+                                    <TableCell>
+                                        <BooleanBadge state={!!t.activatedDate}>
+                                            {t.activatedDate ? timeAgo(t.activatedDate) : "Not activated"}
+                                        </BooleanBadge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <BooleanBadge state={t.enabled}>
+                                            {t.enabled ? "Yes" : "No"}
+                                        </BooleanBadge>
+                                    </TableCell>
                                     <TableCell className="flex gap-3">
+                                        <Button onClick={() => {
+                                            const pr = new URLSearchParams(searchParams)
+                                            pr.set("trackerId", t.id)
+                                            pr.delete("licenseId")
+                                            router.push("?" + pr.toString())
+                                        }} variant={"outline"} size={"icon"}>
+                                            <CircleArrowOutUpRight />
+                                        </Button>
                                         <SignatureDialog id={licenseId} disableAddTrackerButton trackerId={t.id} />
-                                        <Button disabled={!!t.activatedDate} onClick={() => activateTracker(t.id, true)}>
-                                            {t.activatedDate &&
-                                                <>
-                                                    Activated
-                                                    <Check />
-                                                </>
-                                            }
-                                            {!t.activatedDate &&
-                                                <>
-                                                    Activate <Timer />
-                                                </>
-                                            }
-                                        </Button>
-                                        <Button variant={"secondary"} onClick={() => enableTracker(t.id, !t.enabled)}>
-                                            {t.enabled ? <CircleStop /> : <CirclePlay />}
-                                        </Button>
-                                        <Button onClick={() => deleteTracker(t.id)} variant={"destructive"} size={"icon"}>
-                                            <Trash />
-                                        </Button>
+                                        <ActivateTrackerButton id={t.id} activated={!!t.activatedDate} mutatePath={endpoint} />
+                                        <EnableTrackerButton id={t.id} mutatePath={endpoint} enabled={t.enabled} />
+                                        <DeleteTrackerButton id={t.id} mutatePath={endpoint} />
                                     </TableCell>
                                 </TableRow>
                             )
@@ -164,7 +123,7 @@ export default function TrackerTable({ licenseId }: Props) {
                         Back
                     </Button>
                     <Button onClick={() => {
-                        if (page * 30 >= totalCount) {
+                        if ((page + 1) * 30 >= totalCount) {
                             return
                         }
                         setPage(page + 1)

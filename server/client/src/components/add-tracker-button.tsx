@@ -5,12 +5,11 @@ import { Signature, Tracker } from "@/types/core"
 import { CirclePlus, Crosshair } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import useSWR, { mutate } from "swr"
+import { mutate } from "swr"
 import Loader from "./loader"
+import { TrackerSearchComboBox } from "./tracker-search-box"
 import { Button } from "./ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
-import { ScrollArea } from "./ui/scroll-area"
-import { Separator } from "./ui/separator"
 
 type Props = {
     licenseId: string
@@ -24,9 +23,7 @@ export default function AddTrackerButton(props: Props) {
     const [executed, setExecuted] = useState(false)
     const [open, setOpen] = useState(false)
 
-    // const { data } = useSWR(`/api/licenses/${props.licenseId}/trackers`)
-    // const trackers = data as Tracker[]
-
+    const [selectedTracker, setSelectedTracker] = useState<Tracker | null>(null)
 
     const signLicense = async (trackerId?: string) => {
         setSignLoading(true)
@@ -36,10 +33,11 @@ export default function AddTrackerButton(props: Props) {
             if (trackerId) {
                 params.set("trackerId", trackerId)
             }
-            const resp = await licensify.post(`/api/licenses/${props.licenseId}/sign?${params.toString()}`)
+            const claims = JSON.parse(props.sig)?.license
+            const resp = await licensify.post(`/api/licenses/${props.licenseId}/sign?${params.toString()}`, claims)
             const sig = resp.data as Signature
             props.setSig(JSON.stringify(sig, null, 4))
-            toast(`Successfully signed license`)
+            toast(`Successfully signed tracked license`)
             if (props.mutatePath) {
                 mutate(props.mutatePath)
             }
@@ -66,24 +64,15 @@ export default function AddTrackerButton(props: Props) {
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="size-fit p-1">
-                <Button onClick={() => signLicense()} className="w-full" size={"sm"} variant={"ghost"}>
+                <Button onClick={() => signLicense()} className="w-full" size={"lg"} variant={"ghost"}>
                     New Tracker <CirclePlus />
                 </Button>
-                {/* <ScrollArea className="w-48 rounded-md"> */}
-                {/*     <div className="p-4"> */}
-                {/* <Separator className="my-2" /> */}
-                {/* {trackers?.map((t) => ( */}
-                {/*     <div className="" key={t.id}> */}
-                {/*         <Button onClick={() => signLicense(t.id)} className="w-full" variant={"ghost"} size={"sm"}> */}
-                {/*             <p className="truncate max-w-32"> */}
-                {/*                 {t.id} */}
-                {/*             </p> */}
-                {/*         </Button> */}
-                {/*         <Separator className="my-2" /> */}
-                {/*     </div> */}
-                {/* ))} */}
-                {/*     </div> */}
-                {/* </ScrollArea> */}
+                <TrackerSearchComboBox licenseId={props.licenseId} selected={selectedTracker} setSelected={(t) => {
+                    setSelectedTracker(t)
+                    if (t) {
+                        signLicense(t.id)
+                    }
+                }} />
             </PopoverContent>
         </Popover>
     )

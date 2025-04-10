@@ -19,7 +19,7 @@ export default function LicenseCustomDataCard(props: Props) {
     return (
         <Card className="h-full">
             <CardHeader>
-                <CardTitle>Custom Data</CardTitle>
+                <CardTitle>Server Data</CardTitle>
                 <CardDescription>This data will be stored on the server side for this license, and can hold any use case specific information for your business.</CardDescription>
                 <Button className="max-w-xs" variant={"outline"}>
                     Check out the documentation

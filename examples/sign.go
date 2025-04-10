@@ -26,7 +26,7 @@ func sign() *licensify.Signature {
 	licenseID := uuid.New().String()
 
 	// craft a license withn your client information
-	license := licensify.NewLicense(map[string]string{
+	license := licensify.NewLicense(map[string]any{
 		"expiry":  time.Now().Add(time.Hour * 24 * 365).String(),
 		"id":      licenseID,
 		"product": "Pro Version",

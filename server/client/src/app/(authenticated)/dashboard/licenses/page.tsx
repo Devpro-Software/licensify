@@ -1,72 +1,38 @@
 "use client"
 
 import { useSession } from "@/components/auth-provider"
-import LicenseCard from "@/components/license-card"
-import LicenseCreationDialog from "@/components/license-creation-dialog"
 import LicenseView from "@/components/license-view"
-import Loader from "@/components/loader"
-import { License } from "@/types/core"
+import LicensesView from "@/components/licenses-view"
+import TrackerView from "@/components/tracker-view"
 import { useSearchParams } from "next/navigation"
-import { Suspense } from "react"
-import useSWR from 'swr'
 
 
 export default function Licenses() {
-    const { data, error, isLoading, mutate } = useSWR(`/api/licenses`)
     const { session } = useSession()
     const params = useSearchParams()
     const licenseId = params.get("licenseId")
+    const trackerId = params.get("trackerId")
 
     if (!session) {
         return
     }
 
-    if (error) {
-        return (
-            <div>
-                Error occured in fetching licenses
-            </div>
-        )
-    }
-
     if (licenseId) {
         return (
             <div>
-                <LicenseView id={licenseId} />
+                <LicenseView trackerId={trackerId ?? undefined} id={licenseId} />
             </div>
         )
     }
 
-    const licenses = data as License[]
-    licenses?.sort((a, b) => {
-        return new Date(a.createdAt) > new Date(b.createdAt) ? -1 : 1
-    })
-
-    return (
-        <Suspense>
-            <div className="w-full">
-                <div className="flex justify-between items-center w-full">
-                    <div>
-                        <h4 className="text-4xl font-bold">Licenses</h4>
-                        <h4 className="text-md text-muted-foreground mt-2">Licenses are general purpose digital contracts that enable various validation and authentication use cases.</h4>
-                    </div>
-                    <LicenseCreationDialog />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4 mt-5">
-                    {isLoading &&
-                        <div className="w-[100px]">
-                            <Loader />
-                        </div>
-                    }
-                    {!isLoading && (data as License[]).map(l => {
-                        return (
-                            <div className="" key={l.id}>
-                                <LicenseCard license={l} />
-                            </div>
-                        )
-                    })}
-                </div>
+    if (trackerId) {
+        return (
+            <div>
+                <TrackerView trackerId={trackerId} />
             </div>
-        </Suspense>
-    )
+        )
+    }
+
+
+    return <LicensesView />
 }

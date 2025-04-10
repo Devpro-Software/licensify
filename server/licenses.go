@@ -107,6 +107,16 @@ func (s *Server) setupLicenseEndpoints(gapi *gin.RouterGroup) {
 			return
 		}
 
+		if err := s.db.Where("license_id = ?", license.ID).Delete(&Validation{}).Error; err != nil {
+			internalError(ctx, err)
+			return
+		}
+
+		if err := s.db.Where("license_id = ?", license.ID).Delete(&Tracker{}).Error; err != nil {
+			internalError(ctx, err)
+			return
+		}
+
 		err := s.db.Delete(&license).Error
 		if err != nil {
 			internalError(ctx, err)
@@ -124,9 +134,9 @@ func (s *Server) setupLicenseEndpoints(gapi *gin.RouterGroup) {
 			return
 		}
 
-		var claims map[string]string
+		var claims map[string]any
 		if ctx.ShouldBindJSON(&claims) != nil {
-			claims = map[string]string{
+			claims = map[string]any{
 				"license-id": license.ID,
 				"name":       license.Name,
 			}
@@ -167,5 +177,48 @@ func (s *Server) setupLicenseEndpoints(gapi *gin.RouterGroup) {
 		}
 
 		ctx.JSON(http.StatusOK, &sig)
+	})
+
+	gapi.POST("/licenses/:id/presets", func(c *gin.Context) {
+		licenseID := c.Param("id")
+		var license License
+		if s.db.First(&license, "id = ?", licenseID).Error != nil {
+			http.NotFound(c.Writer, c.Request)
+			return
+		}
+
+		var req struct {
+			CreateTracker bool                   `json:"createTracker"`
+			Data          map[string]interface{} `json:"data"`
+		}
+
+		if err := c.BindJSON(&req); err != nil {
+			return
+		}
+
+		preset := &Preset{}
+		preset.ID = uuid.NewString()
+		preset.CreateTracker = req.CreateTracker
+		preset.Data = req.Data
+
+		if err := s.db.Create(preset).Error; err != nil {
+			internalError(c, err)
+			return
+		}
+	})
+
+	gapi.GET("/licenses/:id/presets", func(c *gin.Context) {
+		licenseID := c.Param("id")
+		var license License
+		if s.db.First(&license, "id = ?", licenseID).Error != nil {
+			http.NotFound(c.Writer, c.Request)
+			return
+		}
+
+		var presets []*Preset
+		if err := s.db.Find(&presets).Error; err != nil {
+			internalError(c, err)
+			return
+		}
 	})
 }

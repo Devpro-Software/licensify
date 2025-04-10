@@ -6,8 +6,8 @@ import InlineEditor from "./inline-editor"
 type Props = {
     name: string
     id: string
-    large?: boolean
     mutatePath?: string
+    large?: boolean
 }
 
 export default function LicenseNameEditor(props: Props) {
@@ -28,7 +28,7 @@ export default function LicenseNameEditor(props: Props) {
 
     return (
         <div>
-            <InlineEditor value={props.name} onSubmit={updateLicense} />
+            <InlineEditor large={props.large} value={props.name} onSubmit={updateLicense} />
         </div>
     )
 }

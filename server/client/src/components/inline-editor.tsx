@@ -33,7 +33,7 @@ export default function InlineEditor(props: Props) {
                     </h4>
                     <Button onClick={() => {
                         setEditName(true)
-                    }} variant={"outline"} size={"icon"}>
+                    }} variant={props.ghost ? "ghost" : "outline"} size={"icon"}>
                         <Pencil />
                     </Button>
                 </div>

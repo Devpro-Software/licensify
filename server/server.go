@@ -72,7 +72,7 @@ func (s *Server) Start() {
 
 	s.db.AutoMigrate(&License{})
 	s.db.AutoMigrate(&Validation{})
-	s.db.AutoMigrate(&ClaimPreset{})
+	s.db.AutoMigrate(&Preset{})
 	s.db.AutoMigrate(&Tracker{})
 	s.db.AutoMigrate(&User{})
 	s.db.AutoMigrate(&Session{})
@@ -143,14 +143,42 @@ func (s *Server) setup(g *gin.Engine) {
 	s.setupValidationEndpoints(gapi)
 	s.setupAuthEndpoints(gauth, gapi)
 
-	g.POST("/api/validate", func(ctx *gin.Context) {
+	g.POST("/api/activate", func(ctx *gin.Context) {
 		var sig licensify.Signature
-		if err := json.NewDecoder(ctx.Request.Body).Decode(&sig); err != nil {
-			s.saveValidation(ctx, "", "", StatusInvalidSignature, nil, err)
-			internalError(ctx, err)
+		if err := ctx.ShouldBindJSON(&sig); err != nil {
+			ctx.Status(http.StatusUnauthorized)
 			return
 		}
-		defer ctx.Request.Body.Close()
+
+		if err := s.verifier.Verify(&sig); err != nil {
+			ctx.Status(http.StatusUnauthorized)
+			return
+		}
+
+		trackerId := sig.License["tracker"]
+		if trackerId == "" {
+			ctx.String(http.StatusBadRequest, "No tracker in signature")
+			return
+		}
+
+		var tracker Tracker
+		if err := s.db.First(&tracker, "id = ?", trackerId).Error; err != nil {
+			ctx.String(http.StatusInternalServerError, "Tracker not available")
+			return
+		}
+
+		now := time.Now()
+		tracker.ActivatedDate = &now
+		s.db.Save(&tracker)
+	})
+
+	g.POST("/api/validate", func(ctx *gin.Context) {
+		var sig licensify.Signature
+		if err := ctx.ShouldBindJSON(&sig); err != nil {
+			s.saveValidation(ctx, "", "", StatusInvalidSignature, nil, err)
+			ctx.Status(http.StatusUnauthorized)
+			return
+		}
 
 		err := s.verifier.Verify(&sig)
 		if err != nil {
@@ -172,10 +200,13 @@ func (s *Server) setup(g *gin.Engine) {
 		trackerId := ""
 		if sig.License["tracker"] != "" {
 			var t Tracker
-			if s.db.First(&t, "id = ?", sig.License["tracker"]).Error == nil {
-				tracker = &t
-				trackerId = tracker.ID
+			if s.db.First(&t, "id = ?", sig.License["tracker"]).Error != nil {
+				ctx.String(http.StatusUnauthorized, string(StatusTrackerUnavailable))
+				s.saveValidation(ctx, licenseID, "", StatusTrackerUnavailable, &sig, err)
+				return
 			}
+			tracker = &t
+			trackerId = tracker.ID
 		}
 
 		if !license.Active {

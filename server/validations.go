@@ -62,7 +62,31 @@ func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 			}
 
 			ctx.JSON(http.StatusOK, result)
+		case "tracker":
+			trackerId := ctx.Query("trackerId")
+			var result []struct {
+				Date         string `json:"date"`
+				Count        int    `json:"count"`
+				SuccessCount int    `json:"successCount"`
+			}
 
+			start := time.Now().AddDate(0, -1, 0)
+			err := s.db.Raw(`
+                SELECT
+                    date(created_at) AS date,
+                    COUNT(*) AS count,
+                    COUNT(CASE WHEN status = 'Accepted' THEN 1 ELSE NULL END) as success_count
+                FROM validations
+                WHERE created_at >= ? AND tracker_id = ?
+                GROUP BY date(created_at)
+                ORDER BY date(created_at) ASC
+                `, start, trackerId).Scan(&result).Error
+			if err != nil {
+				internalError(ctx, err)
+				return
+			}
+
+			ctx.JSON(http.StatusOK, result)
 		default:
 			weekStart := time.Now().AddDate(0, 0, -7)
 			var result []struct {
@@ -128,6 +152,7 @@ func (s *Server) setupValidationEndpoints(gapi *gin.RouterGroup) {
 
 		query := s.db.Model(&Validation{})
 		query = query.Preload("License")
+		query = query.Preload("Tracker")
 
 		licenseId := ctx.Query("licenseId")
 		if licenseId != "" {

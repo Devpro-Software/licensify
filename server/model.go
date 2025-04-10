@@ -40,11 +40,12 @@ type Tracker struct {
 	ActivatedDate *time.Time `json:"activatedDate"`
 }
 
-type ClaimPreset struct {
+type Preset struct {
 	Model
-	LicenseID string                 `json:"-" gorm:"default:null"`
-	License   *License               `json:"license"`
-	Data      map[string]interface{} `gorm:"serializer:json" json:"data"`
+	LicenseID     string                 `json:"-" gorm:"default:null"`
+	License       *License               `json:"license"`
+	CreateTracker bool                   `json:"createTracker"`
+	Data          map[string]interface{} `gorm:"serializer:json" json:"data"`
 }
 
 type User struct {
@@ -77,6 +78,7 @@ const (
 	StatusLicenseInactive     ValidationStatus = "LicenseInactive"
 	StatusLicenseUnavailable  ValidationStatus = "LicenseUnavailable"
 	StatusTrackerDisabled     ValidationStatus = "TrackerDisabled"
+	StatusTrackerUnavailable  ValidationStatus = "TrackerUnavailable"
 	StatusTrackerNotActivated ValidationStatus = "TrackerNotActivated"
 	StatusInternalError       ValidationStatus = "InternalError"
 )

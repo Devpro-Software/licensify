@@ -37,6 +37,7 @@ export type Validation = {
     ip: string
     license?: License
     signature?: string
+    tracker?: Tracker
 }
 
 export type User = {

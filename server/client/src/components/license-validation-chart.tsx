@@ -8,7 +8,7 @@ import {
     CardContent,
     CardDescription,
     CardHeader,
-    CardTitle,
+    CardTitle
 } from "@/components/ui/card"
 import {
     ChartConfig,
@@ -23,9 +23,13 @@ const chartConfig = {
     validations: {
         label: "Validations",
     },
+    total: {
+        label: "Total",
+        color: "#2661d9",
+    },
     success: {
         label: "Successful",
-        color: "#2661d9",
+        color: "#068637",
     },
     rejection: {
         label: "Rejections",
@@ -35,6 +39,7 @@ const chartConfig = {
 
 type Props = {
     licenseId: string
+    trackerId?: string
 }
 
 type Stat = {
@@ -47,16 +52,22 @@ export function LicenseValidationChart(props: Props) {
     const params = new URLSearchParams()
     params.set("type", "license")
     params.set("licenseId", props.licenseId)
+    if (props.trackerId) {
+        params.set("trackerId", props.trackerId)
+        params.set("type", "tracker")
+    }
+
     const { data } = useSWR(`/api/validations/activity?${params.toString()}`)
     const stats = data as Stat[]
 
     const [activeChart, setActiveChart] =
-        React.useState<keyof typeof chartConfig>("success")
+        React.useState<keyof typeof chartConfig>("total")
 
     const total = React.useMemo(
         () => ({
             success: stats?.reduce((acc, curr) => acc + curr.successCount, 0),
             rejection: stats?.reduce((acc, curr) => acc + (curr.count - curr.successCount), 0),
+            total: stats?.reduce((acc, curr) => acc + curr.count, 0),
         }),
         [stats]
     )
@@ -66,7 +77,8 @@ export function LicenseValidationChart(props: Props) {
             return {
                 date: new Date(s.date).toISOString().split("T")[0],
                 success: s.successCount,
-                rejection: s.count - s.successCount
+                rejection: s.count - s.successCount,
+                total: s.count
             }
         })
     }, [stats])
@@ -75,13 +87,13 @@ export function LicenseValidationChart(props: Props) {
         <Card>
             <CardHeader className="flex flex-col items-stretch space-y-0 border-b p-0 sm:flex-row">
                 <div className="flex flex-1 flex-col justify-center gap-1 px-6 py-5 sm:py-6">
-                    <CardTitle>Activity for License</CardTitle>
+                    <CardTitle>Activity for {props.trackerId ? "Tracker" : "License"}</CardTitle>
                     <CardDescription>
-                        Showing daily validation requests for the last month
+                        <p>Showing daily validation requests for the last month</p>
                     </CardDescription>
                 </div>
                 <div className="flex">
-                    {["success", "rejection"].map((key) => {
+                    {["total", "success", "rejection"].map((key) => {
                         const chart = key as keyof typeof chartConfig
                         return (
                             <button
