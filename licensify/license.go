@@ -13,10 +13,10 @@ import (
 
 // License represents an arbitrary set of key-value pairs for license data.
 // Can be passed to a Signer to generate a distributable signature.
-type License map[string]string
+type License map[string]any
 
 // NewLicense creates a new License from the given data map.
-func NewLicense(data map[string]string) License {
+func NewLicense(data map[string]any) License {
 	return License(data)
 }
 
@@ -26,7 +26,7 @@ func (l License) Set(key, val string) {
 }
 
 // Get returns the value for a given key.
-func (l License) Get(key string) string {
+func (l License) Get(key string) any {
 	return l[key]
 }
 
@@ -35,7 +35,7 @@ func (l License) Get(key string) string {
 func (l License) hash() []byte {
 	els := make([]string, len(l))
 	for k, v := range l {
-		els = append(els, fmt.Sprintf("%s:%s", k, v))
+		els = append(els, fmt.Sprintf("%s:%v", k, v))
 	}
 
 	sort.Strings(els)
