@@ -1,0 +1,20 @@
+services:
+  backend:
+    depends_on:
+      - db
+    build: .
+    ports:
+      - "8089:8080"
+    environment:
+      - GO_ENV=production
+    restart: always
+  db:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: db
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8082:8080"

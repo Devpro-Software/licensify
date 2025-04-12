@@ -1,0 +1,51 @@
+import { Steps } from 'nextra/components'
+
+# Installation
+
+## 🛠 System Requirements
+
+To run Licensify, you’ll need the following:
+
+- **Docker** (v20+ recommended)
+  Used to containerize and run the backend server and associated services.
+
+- **Database**
+  Licensify requires a relational database. It is tested with **PostgreSQL** (13+), but should work with any GORM-compatible database.
+
+## Installation Steps
+
+Setting up Licensify is simple with Docker. Follow these steps to get up and running quickly:
+
+<Steps>
+
+### Configure Environment Variables
+
+Create a `.env` file at the root of the project and set your database connection string:
+
+```bash
+DATABASE_URL=postgres://username:password@localhost:5432/licensify
+```
+
+Make sure your database is up and accepting connections.
+
+### Build and Run Container
+
+Run the application with Docker Compose:
+
+```bash
+docker compose up --build
+```
+
+This builds the frontend, compiles the backend, and starts all necessary services.
+
+### Navigate to dashboard
+
+Open your browser and navigate to:
+
+```
+http://localhost:8080
+```
+
+You’ll see the Licensify dashboard, ready to go!
+
+</Steps>
