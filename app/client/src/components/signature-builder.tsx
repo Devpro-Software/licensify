@@ -22,6 +22,7 @@ type BuilderProps = {
     mutatePath?: string
     disableTracker?: boolean
     trackerId?: string
+    isInDialog?: boolean
 }
 
 export function SignatureBuilder(props: BuilderProps) {
@@ -106,11 +107,11 @@ export function SignatureBuilder(props: BuilderProps) {
                         <div className="flex gap-x-3 gap-y-1 flex-wrap mb-2">
                             <SignatureClaimsDialog licenseId={props.licenseId} sig={sig} setSig={updateSig} />
                             {!props.disableTracker &&
-                                <AddTrackerButton mutatePath={props.mutatePath} licenseId={props.licenseId} sig={sigStr} setSig={s => {
+                                <AddTrackerButton isInDialog={props.isInDialog} mutatePath={props.mutatePath} licenseId={props.licenseId} sig={sigStr} setSig={s => {
                                     setSig(JSON.parse(s))
                                 }} />
                             }
-                            <ExpirationPicker expiration={exp} setExpiration={setExpiration} />
+                            <ExpirationPicker isInDialog={props.isInDialog} expiration={exp} setExpiration={setExpiration} />
                             <CopyButton content={sigStr} />
                             <Button onClick={() => download(sigStr)} variant={"secondary"} size={"icon"}>
                                 <Download />
@@ -150,7 +151,7 @@ export default function SignatureDialog({ id, ...props }: Props) {
                     </DialogDescription>
                 </DialogHeader>
                 <div>
-                    <SignatureBuilder disableTracker={props.disableAddTrackerButton} mutatePath={`/api/licenses/${id}/trackers`} licenseId={id} />
+                    <SignatureBuilder isInDialog={true} disableTracker={props.disableAddTrackerButton} mutatePath={`/api/licenses/${id}/trackers`} licenseId={id} trackerId={props.trackerId} />
                 </div>
             </DialogContent>
         </Dialog>

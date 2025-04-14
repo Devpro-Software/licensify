@@ -28,14 +28,15 @@ export default function TrackerTable({ licenseId }: Props) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
-    const [page, setPage] = useState(0)
+    const [page, setPage] = useState(1)
     const [search, setSearch] = useState("")
 
     const params = new URLSearchParams()
     if (search) {
         params.set("name", search)
     }
-    if (page > 0) {
+
+    if (page > 1) {
         params.set("page", page.toString())
     }
 
@@ -130,7 +131,7 @@ export default function TrackerTable({ licenseId }: Props) {
             <CardFooter>
                 <div className="flex justify-end w-full gap-3">
                     <Button onClick={() => {
-                        if (page <= 0) {
+                        if (page <= 1) {
                             return
                         }
                         setPage(page - 1)
@@ -138,7 +139,7 @@ export default function TrackerTable({ licenseId }: Props) {
                         Back
                     </Button>
                     <Button onClick={() => {
-                        if ((page + 1) * 30 >= totalCount) {
+                        if (page * 30 >= totalCount) {
                             return
                         }
                         setPage(page + 1)

@@ -1,0 +1,117 @@
+import { Tabs } from 'nextra/components'
+
+# Sign and Validate your First Signature
+
+In most licensing workflows, the typical flow is to create a product or license and then issue a key for distribution. In Licensify, the process begins by creating a license—a digital contract that can represent various licensing types. Once the license is in place, you generate a signature, which serves as the distributable, verifiable token. This signature encapsulates the license details and can be safely shared with clients or devices. To explore additional use cases with clear implementation strategies, check out the  [use cases section](https://google.com).
+
+> Licensify supports all functionality through both the REST API and the web portal. To interact programmatically, you’ll need an API key—[learn how to generate one here](#).
+
+## Create a License
+
+As mentioned earlier, a license is the central unit for managing and distributing related software entitlements. Each license has a name and an active state—toggling this state instantly affects the validity of all associated signatures. Licenses also support arbitrary, unstructured data, allowing you to store metadata specific to your use case. In most implementations, the license ID can be stored in your system as a reference point for any additional business logic.
+
+<Tabs items={['Portal', 'REST API']}>
+    <Tabs.Tab>
+        #### Using the Portal
+
+        1. Go to the **Licenses** tab in the dashboard.
+        2. Click the plus icon **New License**.
+        3. Fill in the details and save.
+    </Tabs.Tab>
+    <Tabs.Tab>
+        #### Using the REST API
+
+        ```bash
+        curl -X POST https://yourlicensifyserver.com/api/licenses \
+        -H "Authorization: Bearer <API_KEY>" \
+        -H "Content-Type: application/json" \
+        -d '{
+                "name": "Pro License",
+                "active": true,
+                "data": {
+                    "plan": "pro",
+                    "maxDevices": 3
+                }
+            }'
+        ```
+    </Tabs.Tab>
+</Tabs>
+
+## Generate a Signature
+
+With your license created, you can now generate a signature—this is your license key. It's the verifiable, tamper-proof token that can be distributed to end-users or devices. Signatures can be used in a variety of environments: embedded into software binaries, delivered to clients via email, included in provisioning scripts, or used on untrusted infrastructure where server-side checks aren't possible. They carry proof of license without exposing sensitive backend logic.
+
+<Tabs items={['Portal', 'REST API']}>
+    <Tabs.Tab>
+        #### Using the Portal
+
+        1. Go to the **Licenses** tab in the dashboard and select your license
+        2. Click the Sign Button
+        3. Customize the signature.
+        4. Download or copy it.
+    </Tabs.Tab>
+    <Tabs.Tab>
+        #### Using the REST API
+
+        ```bash
+        curl -i -H "Authorization: Bearer <API_KEY>" -X POST https://yourlicensifyserver.com/api/licenses/:id/sign
+        ```
+    </Tabs.Tab>
+</Tabs>
+
+## Add your validation code
+
+Add validation logic to your client application to verify the signature. Each validation is logged server-side, giving you visibility into usage patterns. You can also extend the validation process with custom logic to enforce rules specific to your use case.
+
+<Tabs items={['go', 'py', 'js']}>
+    <Tabs.Tab>
+        ```go
+        sig, err := licensify.LoadSignature("/path/to/license.json")
+        if err != nil {
+            return err
+        }
+
+        b, err := json.Marshal(&sig)
+        if err != nil {
+            return err
+        }
+
+        resp, err := http.Post("https://your-licensify-server.com/api/validate", "application/json", bytes.NewBuffer(b))
+        if err != nil {
+            return err
+        }
+
+        if resp.StatusCode != http.StatusOK {
+            return fmt.Errorf("invalid signature")
+        }
+        ```
+    </Tabs.Tab>
+    <Tabs.Tab>
+        ```python
+        with open("/path/to/license.json") as f:
+            sig = json.load(f)
+
+        resp = requests.post("https://your-licensify-server.com/api/validate", 
+                            json=sig, 
+                            headers={"Content-Type": "application/json"})
+
+        if resp.status_code != 200:
+            raise ValueError("Invalid signature")
+        ```
+    </Tabs.Tab>
+    <Tabs.Tab>
+        ```javascript
+        const sig = JSON.parse(fs.readFileSync("/path/to/license.json", "utf-8"));
+
+        const resp = await fetch("https://your-licensify-server.com/api/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sig),
+        });
+
+        if (!resp.ok) {
+            throw new Error("Invalid signature");
+        }
+        ```
+    </Tabs.Tab>
+</Tabs>

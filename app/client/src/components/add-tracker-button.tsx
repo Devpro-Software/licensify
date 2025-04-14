@@ -16,6 +16,7 @@ type Props = {
     sig: string
     setSig: (s: string) => void
     mutatePath?: string
+    isInDialog?: boolean
 }
 
 export default function AddTrackerButton(props: Props) {
@@ -80,7 +81,7 @@ export default function AddTrackerButton(props: Props) {
                     {signLoading && <Loader />}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="size-fit p-1">
+            <PopoverContent withoutPortal={props.isInDialog} className="size-fit p-1">
                 <Button onClick={() => signLicense()} className="w-full" size={"lg"} variant={"ghost"}>
                     New Tracker <CirclePlus />
                 </Button>

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"server/server"
 
 	"github.com/Devpro-Software/licensify/licensify"
 	"github.com/joho/godotenv"
@@ -40,12 +41,12 @@ func main() {
 		port = "8080"
 	}
 
-	server := newServer(
+	server := server.NewServer(
 		port,
 		dsn,
 		pubBase64,
 		privBase64,
-		os.Getenv("PRODUCTION") != "false",
+		os.Getenv("BYPASS_AUTH") == "true",
 	)
 
 	server.Start()

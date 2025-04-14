@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils"
 type Props = {
     expiration: Date | undefined
     setExpiration: (d: Date | undefined) => void
+    isInDialog?: boolean
 }
 
 export function ExpirationPicker({ expiration: date, ...props }: Props) {
@@ -31,7 +32,7 @@ export function ExpirationPicker({ expiration: date, ...props }: Props) {
                     {date ? format(date, "PP") : <span>Expiration</span>}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0">
+            <PopoverContent withoutPortal={props.isInDialog} className="w-auto p-0 z-50">
                 <Calendar
                     mode="single"
                     selected={date}

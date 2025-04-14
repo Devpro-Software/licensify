@@ -51,7 +51,6 @@ export default function LicenseCard(props: Props) {
 
                     <div className="flex gap-3">
                         <LicenseActivationButton mutatePath="/api/licenses" id={license.id} active={license.active} />
-                        {/* <LicenseDeleteButton mutatePath={"/api/licenses"} id={license.id} /> */}
                     </div>
                 </div>
             </CardFooter>

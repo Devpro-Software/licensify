@@ -125,7 +125,36 @@ func (a *API) Session(token string) *Session {
 	if err := a.db.Preload("User").First(&session, "token = ?", token).Error; err != nil {
 		return nil
 	}
+
+	if time.Now().After(session.Expires) {
+		a.db.Delete(&session)
+		return nil
+	}
+
 	return &session
+}
+
+func (a *API) TestSession() *Session {
+	const testUsername = "john"
+	var user User
+	if a.db.First(&user, "username = ?", testUsername).Error != nil {
+		user.ID = uuid.NewString()
+		user.CreatedAt = time.Now()
+		user.UpdatedAt = time.Now()
+		user.Username = "john"
+		user.FirstName = "john"
+		user.LastName = "pork"
+		a.db.Create(user)
+	}
+
+	testSession := Session{}
+	testSession.ID = "3eeec35e-c292-4c06-a01f-eb3a7ec75fec"
+	testSession.CreatedAt = time.Now()
+	testSession.UpdatedAt = time.Now()
+	testSession.Token = "ac2d416c-e674-4956-ba2f-2ed3c06a4ae9"
+	testSession.Expires = time.Now().Add(time.Hour)
+	testSession.User = &user
+	return &testSession
 }
 
 func (a *API) Licenses() ([]*License, error) {
@@ -195,7 +224,7 @@ func (a *API) DeleteLicense(id string) error {
 	return nil
 }
 
-func (a *API) Sign(license *License, tracker *Tracker, claims map[string]any) (*licensify.Signature, error) {
+func (a *API) Sign(claims map[string]any) (*licensify.Signature, error) {
 	var keyPair KeyPair
 	if err := a.db.First(&keyPair).Error; err != nil {
 		return nil, wrapInternalErr(err)
@@ -301,6 +330,13 @@ func (a *API) TrackerCount(licenseID string) (int, error) {
 
 func (a *API) DeleteTracker(id string) error {
 	t := a.Tracker(id)
+
+	if err := a.db.Model(&Validation{}).
+		Where("tracker_id = ?", t.ID).
+		Update("tracker_id", nil).Error; err != nil {
+		return wrapInternalErr(err)
+	}
+
 	if err := a.db.Delete(t).Error; err != nil {
 		return wrapInternalErr(err)
 	}
@@ -495,18 +531,18 @@ func (a *API) ValidationActivity() ([]*ValidationActivityResult, error) {
 		return nil, wrapInternalErr(err)
 	}
 
-	return nil, nil
+	return result, nil
 }
 
-func (a *API) KeyPair() (*KeyPair, error) {
+func (a *API) KeyPair() *KeyPair {
 	var kp KeyPair
 	if err := a.db.First(&kp).Error; err != nil {
-		return nil, wrapInternalErr(err)
+		return nil
 	}
-	return nil, nil
+	return &kp
 }
 
-func (a *API) SetKeyPair(pub, priv *multipart.FileHeader) (*KeyPair, error) {
+func (a *API) SetKeyPairFiles(pub, priv *multipart.FileHeader) (*KeyPair, error) {
 	pubFile, err := pub.Open()
 	if err != nil {
 		return nil, ErrInvalidKeyFile
@@ -525,7 +561,7 @@ func (a *API) SetKeyPair(pub, priv *multipart.FileHeader) (*KeyPair, error) {
 
 	var kp KeyPair
 	if err := a.db.First(&kp).Error; err != nil {
-		return nil, wrapInternalErr(err)
+		kp.ID = uuid.NewString()
 	}
 
 	kp.PublicKey = pub64
@@ -535,7 +571,23 @@ func (a *API) SetKeyPair(pub, priv *multipart.FileHeader) (*KeyPair, error) {
 		return nil, wrapInternalErr(err)
 	}
 
-	return nil, nil
+	return &kp, nil
+}
+
+func (a *API) SetKeyPair(pub64, priv64 string) (*KeyPair, error) {
+	var kp KeyPair
+	if err := a.db.First(&kp).Error; err != nil {
+		kp.ID = uuid.NewString()
+	}
+
+	kp.PublicKey = pub64
+	kp.PrivateKey = priv64
+
+	if err := a.db.Save(&kp).Error; err != nil {
+		return nil, wrapInternalErr(err)
+	}
+
+	return &kp, nil
 }
 
 func (a *API) Client() *Client {
@@ -579,7 +631,7 @@ func (a *API) Validate(ctx *gin.Context) error {
 	}
 
 	// Signature validity
-	kp, err := a.KeyPair()
+	kp := a.KeyPair()
 	pub, err := licensify.LoadPublicKeyBase64(kp.PublicKey)
 	if err != nil {
 		a.NewValidation(ctx, nil, nil, StatusInternalError, nil, err)

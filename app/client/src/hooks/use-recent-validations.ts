@@ -12,14 +12,14 @@ const pagesSize = 5
 
 export default function useRecentValidations(licenseId?: string, trackerId?: string): RecentValidationStream {
     const [validations, setValidations] = useState<Validation[]>([])
-    const [page, setPage] = useState(0)
+    const [page, setPage] = useState(1)
 
     useEffect(() => {
         loadMore()
     }, [])
 
     const loadMore = async (): Promise<boolean> => {
-        if (validations.length >= (page + 1) * pagesSize) {
+        if (validations.length >= page * pagesSize) {
             return false
         }
 
@@ -31,6 +31,7 @@ export default function useRecentValidations(licenseId?: string, trackerId?: str
             if (trackerId) {
                 countParams.set("trackerId", trackerId)
             }
+
             const countResp = await licensify.get("/api/validations/count?" + countParams.toString())
             const count = countResp.data as number
             const maxPage = Math.ceil(count / pagesSize)

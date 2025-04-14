@@ -71,6 +71,26 @@ type Client struct {
 	ApiKey string `json:"apiKey" gorm:"unqiue"`
 }
 
+type Principal struct {
+	Type      PrincipalType
+	Principal any
+}
+
+func (p *Principal) UnwrapClient() *Client {
+	return p.Principal.(*Client)
+}
+
+func (p *Principal) UnwrapSession() *Session {
+	return p.Principal.(*Session)
+}
+
+type PrincipalType string
+
+const (
+	ServicePrincipal = "ServicePrincipal"
+	UserPrincipal    = "UserPrincipal"
+)
+
 type KeyPair struct {
 	Model
 	PublicKey  string `json:"publicKey"`
