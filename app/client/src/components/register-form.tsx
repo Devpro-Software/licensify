@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input"
 import { licensify } from "@/configuraton/axios"
 import { cn } from "@/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { toast } from "sonner"
 import { z } from "zod"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "./ui/form"
-import { useRouter } from "next/navigation"
 
 
 // TODO: put back to 6
@@ -66,9 +66,9 @@ export function ResgistrationForm() {
         <div className={cn("flex flex-col gap-6")} >
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl">Register</CardTitle>
+                    <CardTitle className="text-2xl">Get Started</CardTitle>
                     <CardDescription>
-                        Enter your information below to sign up
+                        Create the admin account for this Licensify intance by filling the information below.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -156,12 +156,6 @@ export function ResgistrationForm() {
                                 <Button type="submit" className="w-full">
                                     Register
                                 </Button>
-                            </div>
-                            <div className="mt-4 text-center text-sm">
-                                Have an account?{" "}
-                                <a href="/login" className="underline underline-offset-4">
-                                    Login
-                                </a>
                             </div>
                         </form>
                     </Form>

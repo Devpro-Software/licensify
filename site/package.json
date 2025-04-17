@@ -5,6 +5,7 @@
         "start": "next start"
     },
     "dependencies": {
+        "lucide-react": "^0.488.0",
         "next": "^15.3.0",
         "nextra": "^4.2.17",
         "nextra-theme-docs": "^4.2.17",

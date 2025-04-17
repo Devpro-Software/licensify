@@ -39,6 +39,14 @@ func (s *Server) setup(g *gin.Engine) {
 	}
 
 	authMiddleware := func(ctx *gin.Context) {
+		whitelist := []string{"/api/status"}
+		requestPath := ctx.FullPath()
+		for _, path := range whitelist {
+			if path == requestPath {
+				return
+			}
+		}
+
 		if s.bypassAuth {
 			session := s.api.TestSession()
 			if session == nil {
@@ -274,7 +282,13 @@ func (s *Server) setup(g *gin.Engine) {
 		}
 
 		name := c.Query("name")
-		s.api.NewTracker(license.ID, name)
+		t, err := s.api.NewTracker(license.ID, name)
+		if err != nil {
+			internalError(c, err)
+			return
+		}
+
+		c.JSON(http.StatusOK, t)
 	})
 
 	gapi.GET("/licenses/:id/trackers/count", func(c *gin.Context) {
@@ -614,6 +628,19 @@ func (s *Server) setup(g *gin.Engine) {
 			ctx.String(http.StatusBadRequest, "Invalid files")
 			return
 		}
+	})
+
+	gapi.GET("/status", func(ctx *gin.Context) {
+		if s.api.UserCount() == 0 {
+			ctx.JSON(http.StatusOK, gin.H{
+				"status": "unregistered",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"status": "initialized",
+		})
 	})
 
 	g.NoRoute(func(ctx *gin.Context) {

@@ -16,13 +16,13 @@ type Server struct {
 	api        *API
 }
 
-func NewServer(port, dsn, pub, priv string, bypassAuth bool) *Server {
-	api := newAPI(dsn)
+func Start() {
+	config := LoadConfig()
+	newServer(config.Port, config.DatabaseURL, config.BypassAuth).Start()
+}
 
-	kp := api.KeyPair()
-	if kp == nil {
-		api.SetKeyPair(pub, priv)
-	}
+func newServer(port, dsn string, bypassAuth bool) *Server {
+	api := newAPI(dsn)
 
 	return &Server{
 		port:       port,

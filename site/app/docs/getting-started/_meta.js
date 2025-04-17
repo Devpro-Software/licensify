@@ -5,4 +5,7 @@ export default {
     validation: {
         title: "First License Signature"
     },
+    tracker: {
+        title: "Create a Tracker"
+    },
 }

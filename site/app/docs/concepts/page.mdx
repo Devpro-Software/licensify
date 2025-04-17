@@ -1,3 +1,5 @@
+import Toggle from "../../../components/Toggle"
+
 # Concepts
 
 Licensify is built around a flexible set of primitives that enable a wide range of licensing strategies—from simple perpetual licenses to dynamic, usage-based models. At its core, Licensify separates identity (the license), proof (the signature), and usage control (the tracker), allowing vendors to mix and match these components to suit their needs.
@@ -6,21 +8,23 @@ Licensify is built around a flexible set of primitives that enable a wide range 
 
 A License is the core unit of value in Licensify. It represents an entitlement—whether that's a perpetual license, a subscription, or something more custom. Licenses are intentionally schema-less, so you can attach any structured data you need. That means you’re free to define product details, usage limits, feature flags, or anything else without being boxed into a rigid format.
 
-```json
-{
-  "id": "6cca0df3-30e7-41f7-bd7a-1b8af5dd7ed1",
-  "createdAt": "2025-04-10T12:00:00Z",
-  "updatedAt": "2025-04-10T12:00:00Z",
-  "active": true,
-  "name": "Pro License",
-  "data": {
-    "product": "MyApp",
-    "plan": "pro",
-    "maxDevices": 3,
-    "features": ["cloud-sync", "priority-support"]
-  }
-}
-```
+<Toggle textShown="Hide Example" textHidden="Show Example">
+    ```json
+    {
+        "id": "6cca0df3-30e7-41f7-bd7a-1b8af5dd7ed1",
+        "createdAt": "2025-04-10T12:00:00Z",
+        "updatedAt": "2025-04-10T12:00:00Z",
+        "active": true,
+        "name": "Pro License",
+        "data": {
+            "product": "MyApp",
+            "plan": "pro",
+            "maxDevices": 3,
+            "features": ["cloud-sync", "priority-support"]
+        }
+    }
+    ```
+</Toggle>
 
 ## Signatures 🔏
 
@@ -30,29 +34,33 @@ Sinatures can be used with or without a tracker:
 
 - Stateless: A signature on its own can validate the license as-is, perfect for offline or lightweight usage.
 
-```json
-{
-  "sig": "i9NBOlGb7c6QEucpI2PAvVVZkauElpDGISrZs1fLyfoByluQhZcgrGCwRzOHtzsDwWpyVLmMsLgEGzZ/VUxtc1lO9uAyLzbEn4t8hrJExM7Q6Dt...",
-  "license": {
-    "expiration": 1744344000,
-    "license-id": "4df13b4e-db8b-464e-bef7-c374aca29b09",
-    "name": "Pro License"
-  }
-}
-```
+<Toggle textShown="Hide Example" textHidden="Show Example">
+    ```json
+    {
+        "sig": "i9NBOlGb7c6QEucpI2PAvVVZkauElpDGISrZs1fLyfoByluQhZcgrGCwRzOHtzsDwWpyVLmMsLgEGzZ/VUxtc1lO9uAyLzbEn4t8hrJExM7Q6Dt...",
+        "license": {
+            "expiration": 1744344000,
+            "license-id": "4df13b4e-db8b-464e-bef7-c374aca29b09",
+            "name": "Pro License"
+        }
+    }
+    ```
+</Toggle>
 
 - Stateful: When tied to a tracker, the signature is linked to server-side state that can track activation, enforce expiration, and control lifecycle events.
 
-```json
-{
-  "sig": "i9NBOlGb7c6QEucpI2PAvVVZkauElpDGISrZs1fLyfoByluQhZcgrGCwRzOHtzsDwWpyVLmMsLgEGzZ/VUxtc1lO9uAyLzbEn4t8hrJExM7Q6Dt...",
-  "license": {
-    "license-id": "4df13b4e-db8b-464e-bef7-c374aca29b09",
-    "name": "Pro License",
-    "tracker": "d31db24c-7d47-418b-b5f2-43dce8fb20a2"
-  }
-}
-```
+<Toggle textShown="Hide Example" textHidden="Show Example">
+    ```json
+        {
+            "sig": "i9NBOlGb7c6QEucpI2PAvVVZkauElpDGISrZs1fLyfoByluQhZcgrGCwRzOHtzsDwWpyVLmMsLgEGzZ/VUxtc1lO9uAyLzbEn4t8hrJExM7Q6Dt...",
+            "license": {
+                "license-id": "4df13b4e-db8b-464e-bef7-c374aca29b09",
+                "name": "Pro License",
+                "tracker": "d31db24c-7d47-418b-b5f2-43dce8fb20a2"
+            }
+        }
+    ```
+</Toggle>
 
 ## Trackers 📍
 
@@ -60,17 +68,19 @@ A Tracker is a unit of state associated with a license or signature. Trackers ar
 
 For example, a vendor could issue the same license to multiple devices but control each installation with a separate tracker, limiting the number of concurrent activations or enforcing regional restrictions.
 
-```json
-{
-  "id": "91a9af9d-81d1-4a0d-b594-2bdd55cea9b6",
-  "createdAt": "2025-04-10T12:00:00Z",
-  "updatedAt": "2025-04-10T12:00:00Z",
-  "name": "Device Activation - macOS",
-  "enabled": true,
-  "activatedDate": "2025-04-10T12:05:00Z",
-  "expiration": "2025-05-10T12:00:00Z",
-}
-```
+<Toggle textShown="Hide Example" textHidden="Show Example">
+    ```json
+        {
+        "id": "91a9af9d-81d1-4a0d-b594-2bdd55cea9b6",
+        "createdAt": "2025-04-10T12:00:00Z",
+        "updatedAt": "2025-04-10T12:00:00Z",
+        "name": "Device Activation - macOS",
+        "enabled": true,
+        "activatedDate": "2025-04-10T12:05:00Z",
+        "expiration": "2025-05-10T12:00:00Z",
+        }
+    ```
+</Toggle>
 
 ## Validations ✅
 
@@ -78,17 +88,19 @@ A Validation is a record of a license check. This might be triggered during logi
 
 Validations optionally include a tracker reference, making it easy to determine whether a given signature was used with an associated stateful control.
 
-```json
-{
-  "id": "c6e6332b-f27f-4aae-9d43-cca411236e14",
-  "createdAt": "2025-04-11T09:32:00Z",
-  "updatedAt": "2025-04-11T09:32:00Z",
-  "error": null,
-  "userAgent": "MyApp/2.1 (macOS 13.3)",
-  "ip": "203.0.113.15",
-  "status": "Accepted",
-}
-```
+<Toggle textShown="Hide Example" textHidden="Show Example">
+    ```json
+        {
+        "id": "c6e6332b-f27f-4aae-9d43-cca411236e14",
+        "createdAt": "2025-04-11T09:32:00Z",
+        "updatedAt": "2025-04-11T09:32:00Z",
+        "error": null,
+        "userAgent": "MyApp/2.1 (macOS 13.3)",
+        "ip": "203.0.113.15",
+        "status": "Accepted",
+        }
+    ```
+</Toggle>
 
 ## Key Pairs 🔑
 

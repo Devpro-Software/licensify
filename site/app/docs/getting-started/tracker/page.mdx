@@ -1,0 +1,28 @@
+import { Tabs } from 'nextra/components'
+
+# Create a Tracker
+
+License signatures are tamper-proof tokens that can be validated independently. However, trackers introduce an additional layer of server-side state. While licenses already carry high-level status like activation, trackers allow for more granular control—such as tracking individual activations, enforcing expirations, or managing usage lifecycles.
+
+## Create the Tracker
+
+#### Using the Portal
+
+1. Go to the **Licenses** tab in the dashboard.
+2. Click the plus icon located at the top right of the Tracker table.
+3. Customize the tracker after creation.
+4. Sign the License with the tracker by clicking the Sign button for this tracker.
+
+#### Using the REST API
+
+```bash
+curl -H "Authorization: Bearer <API_KEY>" -X POST "https://yourlicensifyserver.com/api/licenses/:id/trackers"
+curl -H "Authorization: Bearer <API_KEY>" -X PUT "https://yourlicensifyserver.com/api/trackers/:id?name=Newname&expiration=1744770089"
+curl -H "Authorization: Bearer <API_KEY>" -X POST "https://yourlicensifyserver.com/api/licenses/:id/sign?type=tracked&trackerId=<id>"
+```
+
+Check out the full reference [here](/docs/reference/api).
+
+## Validation
+
+Validation works the same as in other cases. However, when a tracker is involved, the validation log is linked to that tracker, and the outcome is influenced by any tracker-specific rules you've configured—such as activation limits, expiration, or custom logic.

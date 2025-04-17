@@ -1,9 +1,12 @@
 package server
 
 import (
-	cyrptrand "crypto/rand"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -52,9 +55,24 @@ func newAPI(dsn string) *API {
 	db.AutoMigrate(&Client{})
 	db.AutoMigrate(&KeyPair{})
 
-	return &API{
+	a := &API{
 		db: db,
 	}
+
+	kp := a.KeyPair()
+	if kp == nil {
+		pub, priv, err := a.GenerateKeyPair()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = a.SetKeyPair(pub, priv)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return a
 }
 
 func (a *API) RegisterUser(username, password, firstName, lastName string) (*User, error) {
@@ -82,6 +100,12 @@ func (a *API) RegisterUser(username, password, firstName, lastName string) (*Use
 	return user, nil
 }
 
+func (a *API) UserCount() int {
+	var count int64
+	a.db.Model(&User{}).Count(&count)
+	return int(count)
+}
+
 func (a *API) Login(username, password string) (*Session, error) {
 	var user User
 	err := a.db.First(&user, "username = ?", username).Error
@@ -94,7 +118,7 @@ func (a *API) Login(username, password string) (*Session, error) {
 	}
 
 	bytes := make([]byte, 32)
-	if _, err := cyrptrand.Read(bytes); err != nil {
+	if _, err := rand.Read(bytes); err != nil {
 		return nil, wrapInternalErr(err)
 	}
 
@@ -574,6 +598,41 @@ func (a *API) SetKeyPairFiles(pub, priv *multipart.FileHeader) (*KeyPair, error)
 	return &kp, nil
 }
 
+func (a *API) GenerateKeyPair() (pub64, priv64 string, error error) {
+	// TODO: move to licensify core lib
+	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		error = wrapInternalErr(err)
+		return
+	}
+
+	privANS, err := x509.MarshalPKCS8PrivateKey(priv)
+	if err != nil {
+		error = wrapInternalErr(err)
+		return
+	}
+
+	pubANS, err := x509.MarshalPKIXPublicKey(&priv.PublicKey)
+	if err != nil {
+		error = wrapInternalErr(err)
+		return
+	}
+
+	privPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PRIVATE KEY",
+		Bytes: privANS,
+	})
+
+	pubPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "PUBLIC KEY",
+		Bytes: pubANS,
+	})
+
+	pub64 = base64.StdEncoding.EncodeToString(pubPEM)
+	priv64 = base64.StdEncoding.EncodeToString(privPEM)
+	return
+}
+
 func (a *API) SetKeyPair(pub64, priv64 string) (*KeyPair, error) {
 	var kp KeyPair
 	if err := a.db.First(&kp).Error; err != nil {
@@ -607,7 +666,7 @@ func (a *API) SetClient() (*Client, error) {
 	}
 
 	bytes := make([]byte, 32)
-	if _, err := cyrptrand.Read(bytes); err != nil {
+	if _, err := rand.Read(bytes); err != nil {
 		return nil, wrapInternalErr(err)
 	}
 

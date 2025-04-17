@@ -20,7 +20,7 @@ type Props = {
 
 const filler = "************************************************************"
 
-export default function KeyUpload({ }: Props) {
+export default function KeyUploadCard({ }: Props) {
     const [publicKey, setPublicKey] = useState<File | null>(null)
     const [privateKey, setPrivateKey] = useState<File | null>(null)
 

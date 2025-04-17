@@ -34,7 +34,7 @@ export default function LicenseDeleteButton({ id, mutatePath, onDelete }: Props)
     }
 
     return (
-        <ConfirmationDialog onConfirm={() => deleteLicense()} title="Delete this license" description="Are your sure you want to delete this license? All trackers and validation logs with this license will be deleted and every signature associated with this license will be invalidated.">
+        <ConfirmationDialog onConfirm={() => deleteLicense()} title="Delete this license" description="Are your sure you want to delete this license? All trackers and validation logs with this license will be deleted and every signature associated with this license will no longer be valid.">
             <Button disabled={deleteLoading} variant={"destructive"} size={"icon"}>
                 {!deleteLoading &&
                     <Trash />

@@ -1,7 +1,7 @@
 "use client"
 
 import ApiKeyCard from "@/components/api-key-card"
-import KeyUpload from "@/components/key-upload-card"
+import KeyUploadCard from "@/components/key-upload-card"
 import ProfileCard from "@/components/profile-card"
 
 type Props = {}
@@ -15,7 +15,7 @@ export default function Page({ }: Props) {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <div>
-                    <KeyUpload />
+                    <KeyUploadCard />
                 </div>
                 <div>
                     <ApiKeyCard />

@@ -1,0 +1,218 @@
+---
+title: API Specification
+---
+
+# API Specification
+
+Below is the API specification for the Licensify server.
+
+## Authorization
+
+All API endpoints under `/api` require authentication.
+
+### Methods of Authorization
+
+- **Bearer Token** in `Authorization` header: `Bearer <API_KEY>`
+  - A API token can be generated in the UI.
+- **Session Cookie**: `session_token` cookie from user login
+  - User authentication using the portal
+
+---
+
+## Authentication
+
+### `POST /auth/register`
+
+Registers a new user.
+**Body:**
+
+```json
+{
+  "username": "string",
+  "password": "string",
+  "firstName": "string",
+  "lastName": "string"
+}
+```
+
+**Returns:** `201 Created` with user object
+
+### `POST /auth/login`
+
+Logs in and returns a session cookie.
+**Body:**
+
+```json
+{
+  "username": "string",
+  "password": "string"
+}
+```
+
+**Returns:** `200 OK` and sets `session_token`
+
+### `POST /auth/logout`
+
+Logs out the user and deletes the `session_token` cookie.
+
+---
+
+## License Endpoints
+
+### `GET /api/licenses`
+
+Returns a list of all licenses.
+
+### `POST /api/licenses`
+
+Creates a new license.
+**Body:**
+
+```json
+{
+  "name": "string",
+  "data": { "key": "value" },
+  "active": true
+}
+```
+
+### `GET /api/licenses/:id`
+
+Returns the license with the given ID.
+
+### `PUT /api/licenses/:id`
+
+Updates license metadata.
+**Query Parameters:**
+
+- `active`: `true|false`
+- `name`: new name
+**Body:** JSON map to update license data
+
+### `DELETE /api/licenses/:id`
+
+Deletes the specified license.
+
+### `POST /api/licenses/:id/sign`
+
+Signs license data.
+**Query Parameters:**
+
+- `type`: optional, if `tracked`, adds tracker
+- `trackerId`: optional tracker ID
+**Body:** Optional JSON claims object
+
+---
+
+## Tracker Endpoints
+
+### `GET /api/licenses/:id/trackers`
+
+Returns all trackers for a license.
+**Query Params (optional):** `page`, `pageSize`, `name`
+
+### `POST /api/licenses/:id/trackers`
+
+Creates a new tracker.
+**Query Parameter:** `name`
+
+### `GET /api/licenses/:id/trackers/count`
+
+Returns total tracker count for a license.
+
+### `GET /api/trackers/:id`
+
+Returns details of a specific tracker.
+
+### `PUT /api/trackers/:id`
+
+Updates a tracker.
+**Query Parameters (optional):**
+
+- `name`: new name
+- `enabled`: `true|false`
+- `activated`: `true|false`
+- `expiration`: UNIX timestamp or `null`
+
+### `DELETE /api/trackers/:id`
+
+Deletes the specified tracker.
+
+---
+
+## Validation Endpoints
+
+### `GET /api/validations/activity`
+
+**Query Parameter:**
+
+- `type`: `license|licenses|tracker`
+- `licenseId` / `trackerId`: based on type
+
+### `GET /api/validations/count`
+
+Returns count of validations.
+**Query Parameters:** `licenseId`, `trackerId`
+
+### `GET /api/validations`
+
+Paginated validations list.
+**Query Parameters (optional):** `page`, `pageSize`
+
+---
+
+## Client & Keys
+
+### `POST /api/client`
+
+Sets and returns the client object.
+
+### `GET /api/client`
+
+Returns the current client (if any).
+
+### `GET /api/keys`
+
+Returns public/private key pair.
+
+### `POST /api/keys`
+
+Upload new key pair.
+**Form Data:** `publicKey`, `privateKey`
+
+---
+
+## Activation / Validation
+
+### `POST /api/activate`
+
+Activates a tracker via signed license.
+**Body:** Signature object (JSON)
+
+### `POST /api/validate`
+
+Validates a request using a license signature.
+**Returns:** `200 OK` or `401 Unauthorized`
+
+---
+
+## Session & Profile
+
+### `GET /api/session`
+
+Returns current user session object.
+
+### `PUT /api/profile`
+
+Updates user profile.
+**Body:**
+
+```json
+{
+  "firstName": "string",
+  "lastName": "string"
+}
+```
+
+```
+
