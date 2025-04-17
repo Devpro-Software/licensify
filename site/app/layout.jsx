@@ -9,7 +9,7 @@ export const metadata = {
 const banner = <Banner>Nextra 4.0 is released 🎉</Banner>
 const navbar = (
     <Navbar
-        logo={<b>Nextra</b>}
+        logo={<b>Licensify</b>}
     // ... Your additional navbar options
     />
 )
